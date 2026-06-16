@@ -12,7 +12,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "zod": "^3.24.0"
+    "zod": "^3.24.0",
+    "@tonejs/midi": "^2.0.28"
   },
   "devDependencies": {
     "typescript": "^5.8.0",
