@@ -1,6 +1,6 @@
 # Codex Build Hub — Site Setup Manual
 
-**Version:** 0.3.0
+**Version:** 0.10.0
 **Last updated:** 2026-06-16
 
 This document covers everything needed to get the project running — locally for development, on a Synology NAS for private hosting, and on Vercel for public deployment.
@@ -80,13 +80,13 @@ This installs all dependencies across the monorepo (`apps/web` and `packages/sha
 
 ```bash
 # Windows
-copy .env.example .env.local
+copy apps\web\.env.example apps\web\.env.local
 
 # Mac / Linux
-cp .env.example .env.local
+cp apps/web/.env.example apps/web/.env.local
 ```
 
-Open `.env.local` and fill in your Supabase credentials (see [Section 4](#4-supabase-setup)).
+Open `apps/web/.env.local`. For local-only (offline) use, the defaults work without any changes — just leave `VITE_ENABLE_CLOUD_SYNC=false`. Only fill in Supabase credentials if you want cloud sync.
 
 ### Start the Development Server
 
@@ -94,9 +94,7 @@ Open `.env.local` and fill in your Supabase credentials (see [Section 4](#4-supa
 pnpm --dir apps/web dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
-
-The dev server includes Hot Module Replacement — changes to source files update the browser instantly without a full reload.
+Open [http://localhost:5173](http://localhost:5173) in your browser. The dev server includes Hot Module Replacement — changes to source files update the browser instantly without a full reload.
 
 ---
 
@@ -106,29 +104,31 @@ All variables are prefixed with `VITE_` so Vite can expose them to the frontend 
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `VITE_APP_ENV` | Yes | `development` | Set to `production` when deploying |
-| `VITE_SUPABASE_URL` | Yes | — | Your Supabase project URL |
-| `VITE_SUPABASE_ANON_KEY` | Yes | — | Supabase anon/public key (safe to expose in frontend) |
-| `VITE_PUBLIC_APP_URL` | Yes | `http://localhost:5173` | The full URL where the app is hosted |
-| `VITE_ENABLE_CLOUD_SYNC` | No | `false` | Set to `true` to enable Supabase cloud sync |
+| `VITE_APP_ENV` | No | `development` | Set to `production` when deploying |
+| `VITE_SUPABASE_URL` | No | placeholder | Your Supabase project URL (only needed when cloud sync is on) |
+| `VITE_SUPABASE_ANON_KEY` | No | placeholder | Supabase anon/public key (only needed when cloud sync is on) |
+| `VITE_PUBLIC_APP_URL` | No | `http://localhost:5173` | The full URL where the app is hosted |
+| `VITE_ENABLE_CLOUD_SYNC` | No | `false` | Set to `true` to enable Supabase cloud sync and authentication |
 | `VITE_MAX_TEXT_IMPORT_MB` | No | `5` | Maximum size for HTML/JSON/MD/TXT imports |
 | `VITE_MAX_AUDIO_IMPORT_MB` | No | `250` | Maximum size for audio file imports |
 | `VITE_SENTRY_DSN` | No | — | Sentry error monitoring DSN (leave blank to disable) |
 | `VITE_PLAUSIBLE_DOMAIN` | No | — | Plausible analytics domain (leave blank to disable) |
 
+**Important:** When `VITE_ENABLE_CLOUD_SYNC=false` (the default), the app runs entirely offline and the Supabase URL/key are not used. You do not need a Supabase account to run the app in local mode. Placeholder values are used internally so the Supabase client initialises without throwing.
+
 ### Files
 
 | File | Committed | Purpose |
 |---|---|---|
-| `.env.example` | Yes | Template with placeholder values — safe to commit |
-| `.env.local` | **No** | Your real secrets — never committed to git |
+| `apps/web/.env.example` | Yes | Template with placeholder values — safe to commit |
+| `apps/web/.env.local` | **No** | Your real secrets — never committed to git |
 | `.env.production` | No | Production overrides (set these in Vercel dashboard instead) |
 
 ---
 
 ## 4. Supabase Setup
 
-Supabase provides the database, authentication and file storage for the cloud sync features.
+Supabase provides the database, authentication and file storage when cloud sync is enabled. The app works fully offline without it.
 
 ### Get Your Credentials
 
@@ -146,20 +146,20 @@ Supabase provides the database, authentication and file storage for the cloud sy
 | Project URL | `https://qlzeefbelqmfmoxktyfo.supabase.co` |
 | Region | Check your Supabase dashboard |
 
-### Cloud Sync
+### Enabling Cloud Sync
 
-Cloud sync is disabled by default (`VITE_ENABLE_CLOUD_SYNC=false`). The app works fully offline without Supabase. When you are ready to enable cloud sync:
+Cloud sync is disabled by default. To enable it:
 
-1. Set `VITE_ENABLE_CLOUD_SYNC=true` in `.env.local`
-2. The app will connect to Supabase on next launch
-3. Database migrations (in `supabase/migrations/`) will need to be applied first
+1. Set `VITE_ENABLE_CLOUD_SYNC=true` in `apps/web/.env.local`
+2. Apply the database migrations (see below)
+3. Restart the dev server
 
-### Applying Database Migrations (Future — Stage 13)
+### Applying Database Migrations
 
-The SQL migration files in `supabase/migrations/` define all database tables and Row Level Security policies. These will be run using the Supabase CLI:
+The SQL migration files in `supabase/migrations/` define all database tables, indexes and Row Level Security policies. Apply them using the Supabase CLI:
 
 ```bash
-# Install Supabase CLI
+# Install Supabase CLI (once)
 npm install -g supabase
 
 # Log in
@@ -168,6 +168,12 @@ supabase login
 # Apply migrations to your cloud project
 supabase db push --project-ref qlzeefbelqmfmoxktyfo
 ```
+
+The migration at `supabase/migrations/20240001_initial_schema.sql` creates:
+- 12 tables: workspaces, builds, build_stages, blocks, chain_racks, midi_patterns, samples, presets, grooves, arrangements, share_links, import_jobs
+- RLS policies so each user can only see their own data
+- Public read policy for share_links with visibility set to `public` or `unlisted`
+- Indexes on workspace_id, build_id and slug columns
 
 ---
 
@@ -179,7 +185,9 @@ The project is hosted at: [github.com/billylovett7-lgtm/BH-CLAU](https://github.
 
 ### Adding Repository Secrets (for CI)
 
-The GitHub Actions CI pipeline needs your Supabase credentials to build the app. Add them as repository secrets:
+The GitHub Actions CI pipeline needs Supabase credentials to build the app with cloud sync enabled. If you are only building in local mode, these are optional (the build uses placeholder values automatically).
+
+To add them:
 
 1. Go to your GitHub repo → **Settings → Secrets and variables → Actions**
 2. Click **New repository secret** and add:
@@ -193,7 +201,7 @@ The GitHub Actions CI pipeline needs your Supabase credentials to build the app.
 
 | Branch | Purpose |
 |---|---|
-| `main` | Production-ready code. CI runs on every push. |
+| `main` | Production-ready code. CI runs on every push. Vercel deploys from here. |
 | `develop` | Integration branch for features (optional, add when team grows) |
 | `feature/*` | Individual feature branches |
 
@@ -226,7 +234,7 @@ Vercel provides zero-configuration hosting for Vite/React apps with automatic de
 | `VITE_SUPABASE_URL` | Your project URL | All |
 | `VITE_SUPABASE_ANON_KEY` | Your anon key | All |
 | `VITE_PUBLIC_APP_URL` | `https://your-domain.vercel.app` | Production |
-| `VITE_ENABLE_CLOUD_SYNC` | `true` | Production |
+| `VITE_ENABLE_CLOUD_SYNC` | `false` (or `true` if using Supabase) | Production |
 | `VITE_MAX_TEXT_IMPORT_MB` | `5` | All |
 | `VITE_MAX_AUDIO_IMPORT_MB` | `250` | All |
 
@@ -300,7 +308,7 @@ Every time you want to update what is running on the NAS:
 pnpm --dir apps/web build
 ```
 
-This creates the `apps/web/dist/` folder containing the complete app as static files.
+This creates the `apps/web/dist/` folder containing the complete app as static files (including the PWA service worker).
 
 #### Copy dist/ to the NAS:
 
@@ -347,17 +355,14 @@ Synology DS223+
     ├── Web Station / Caddy  →  serves apps/web/dist/ as HTTPS static site
     └── Let's Encrypt HTTPS  →  auto-renewed certificate
 
-Cloud (separate)
+Cloud (separate, optional)
     └── Supabase (qlzeefbelqmfmoxktyfo.supabase.co)
         ├── Auth
         ├── Postgres database
-        └── Storage (when enabled)
+        └── Storage (when VITE_ENABLE_CLOUD_SYNC=true)
 ```
 
-The NAS only serves the frontend HTML/CSS/JS. All data operations go to Supabase cloud. This means:
-- The DS223+ has very low CPU/RAM usage (just serving static files)
-- If the NAS is offline, the app still works offline using the local IndexedDB cache
-- Cloud data sync resumes automatically when the connection returns
+The NAS only serves the frontend HTML/CSS/JS. All data operations use local IndexedDB by default. Cloud sync to Supabase is optional and gated behind the `VITE_ENABLE_CLOUD_SYNC` flag.
 
 ---
 
@@ -373,8 +378,8 @@ Push to main
     ├── pnpm install (with lockfile)
     ├── pnpm lint (ESLint across all packages)
     ├── pnpm typecheck (TypeScript across all packages)
-    ├── pnpm test (Vitest unit tests)
-    └── pnpm build (Vite production build)
+    ├── pnpm test (Vitest — 63 unit and component tests)
+    └── pnpm --dir apps/web build (Vite production build)
 ```
 
 If any step fails, the push is flagged as failed in GitHub. Vercel will not deploy a build that fails CI.
@@ -385,11 +390,11 @@ The workflow is defined in `.github/workflows/ci.yml`.
 
 ### Required Secrets
 
-Add these in GitHub → Settings → Secrets → Actions:
+Add these in GitHub → Settings → Secrets → Actions if you want CI to build with real Supabase credentials. If you leave them unset, the build still passes using placeholder values (local mode):
 
 | Secret | Where used |
 |---|---|
-| `VITE_SUPABASE_URL` | Build step (needed for Vite env substitution) |
+| `VITE_SUPABASE_URL` | Build step (Vite env substitution) |
 | `VITE_SUPABASE_ANON_KEY` | Build step |
 
 ---
@@ -400,50 +405,71 @@ Add these in GitHub → Settings → Secrets → Actions:
 codex-build-hub/
 │
 ├── apps/
-│   └── web/                    React + Vite + TypeScript SPA
-│       ├── public/             Static assets (favicon, PWA icons)
+│   └── web/                        React + Vite + TypeScript SPA
+│       ├── public/                 Static assets (favicon, PWA icons)
 │       ├── src/
-│       │   ├── app/            Router, providers, auth guards
-│       │   ├── components/     Reusable UI (layout, blocks, primitives)
-│       │   ├── features/       One folder per page/feature area
-│       │   ├── services/       Supabase, Dexie, sync, export
-│       │   ├── schemas/        Web-layer Zod schema re-exports
-│       │   ├── lib/            Utilities, formatters, sanitize wrapper
-│       │   ├── styles/         CSS tokens, global styles, print styles
-│       │   └── tests/          Unit, component, E2E and security tests
+│       │   ├── app/                Router, providers, auth guards
+│       │   │   ├── guards/         AuthGuard, PublicGuard
+│       │   │   ├── App.tsx
+│       │   │   ├── Providers.tsx
+│       │   │   └── Router.tsx
+│       │   ├── components/
+│       │   │   ├── blocks/         BlockRenderer + 11 block components
+│       │   │   ├── layout/         TopNav, MobileNav, PageShell
+│       │   │   └── ui/             Button, Select, Input, Badge, Modal, etc.
+│       │   ├── features/           One folder per page / feature area
+│       │   │   ├── auth/           LoginPage
+│       │   │   ├── build-workspace/ BuildWorkspacePage, BuildPrintPage
+│       │   │   ├── builds/         BuildsPage, NewBuildPage
+│       │   │   ├── compare/        ComparePage
+│       │   │   ├── dashboard/      DashboardPage
+│       │   │   ├── import-center/  ImportPage
+│       │   │   ├── libraries/      chains, midi, samples, presets, grooves, arrangements
+│       │   │   ├── marketing/      LandingPage, DocsPage
+│       │   │   ├── public-share/   PublicBuildPage
+│       │   │   ├── qa/             QaPage
+│       │   │   ├── settings/       SettingsPage
+│       │   │   └── storage/        StoragePage
+│       │   ├── hooks/              useBuild, useBuilds, useLibrary, useCurrentUser
+│       │   ├── lib/                supabaseClient, localIdentity, queryClient
+│       │   ├── services/           buildService, importService, backup, syncService, shareService
+│       │   ├── store/              authStore (Zustand)
+│       │   ├── styles/             global.css, print.css (CSS custom properties)
+│       │   ├── tests/
+│       │   │   ├── components/     BlockRenderer.test.tsx
+│       │   │   ├── unit/           schemas, parsers, migrations, constants
+│       │   │   └── setup.ts        Vitest global setup
+│       │   └── vite-env.d.ts       Vite type declarations (import.meta.env, CSS imports)
 │       ├── index.html
 │       ├── vite.config.ts
+│       ├── tsconfig.json
 │       └── package.json
 │
 ├── packages/
-│   └── shared/                 Framework-agnostic (no React, no DOM)
+│   └── shared/                     Framework-agnostic (no React, no DOM)
 │       └── src/
-│           ├── schemas/        Authoritative Zod schemas (16 models)
-│           ├── types/          TypeScript types from schemas
-│           ├── constants/      Stages, genres, block types, templates
-│           ├── importers/      HTML/JSON/MD/TXT/MIDI parsers
-│           └── migrations/     Version migration functions
+│           ├── schemas/            Authoritative Zod schemas (16 models)
+│           ├── constants/          STAGES (11), GENRES, BLOCK_TYPES (11), TEMPLATES (8)
+│           ├── importers/          HTML/JSON/MD/TXT/MIDI parsers + XSS sanitiser
+│           └── migrations/         Backup version migration functions
 │
 ├── supabase/
-│   ├── config.toml             Local Supabase configuration
-│   ├── migrations/             SQL migration files (applied to production)
-│   └── functions/              Supabase Edge Functions
+│   ├── config.toml                 Local Supabase configuration
+│   └── migrations/
+│       └── 20240001_initial_schema.sql   Full schema with RLS policies
 │
 ├── docker/
-│   ├── docker-compose.yml      Self-hosted deployment
-│   └── Caddyfile               Reverse proxy config
+│   ├── docker-compose.yml          Self-hosted deployment (Caddy)
+│   └── Caddyfile                   Reverse proxy config
 │
 ├── docs/
-│   ├── USER_MANUAL.md          This file's companion
-│   └── SETUP.md                This file
+│   ├── SETUP.md                    This file
+│   └── USER_MANUAL.md              End-user feature guide
 │
-├── .github/workflows/          GitHub Actions CI/CD
-├── .env.example                Environment variable template
-├── .gitignore
-├── .gitattributes
+├── .github/workflows/ci.yml        GitHub Actions CI/CD
+├── .env.example                    Environment variable template (at root — copy to apps/web/.env.local)
 ├── CHANGELOG.md
-├── README.md
-├── package.json                Monorepo root (scripts only)
+├── package.json                    Monorepo root (Turborepo scripts)
 ├── pnpm-workspace.yaml
 ├── pnpm-lock.yaml
 └── turbo.json
@@ -453,17 +479,18 @@ codex-build-hub/
 
 ## 10. Common Commands
 
-Run all of these from the **monorepo root** (`C:\Users\billy\Documents\Build Hub - Claude`):
+Run all of these from the **monorepo root** (`C:\Users\billy\Documents\Build Hub - Claude` on Windows):
 
 | Command | What it does |
 |---|---|
 | `pnpm --dir apps/web dev` | Start the dev server at localhost:5173 |
 | `pnpm --dir apps/web build` | Build for production → `apps/web/dist/` |
 | `pnpm --dir apps/web preview` | Preview the production build locally |
+| `pnpm --dir apps/web test` | Run all 63 Vitest tests |
+| `pnpm --dir apps/web test --run` | Run tests once (no watch mode) |
 | `pnpm lint` | Run ESLint across all packages |
-| `pnpm typecheck` | Run TypeScript across all packages |
-| `pnpm test` | Run Vitest unit tests |
-| `pnpm --dir packages/shared typecheck` | Type-check the shared package only |
+| `pnpm typecheck` | Run TypeScript type-check across all packages |
+| `pnpm --dir apps/web exec tsc --noEmit` | Type-check the web app only |
 | `pnpm install` | Install / update all dependencies |
 | `git push origin main` | Push to GitHub (triggers CI + Vercel deploy) |
 
@@ -492,28 +519,54 @@ pnpm --dir apps/web dev --port 5174
 
 ### App loads but shows a blank page
 
-Open browser DevTools → Console and look for errors. The most common causes are:
-- Missing `.env.local` file (copy from `.env.example`)
-- Invalid Supabase credentials in `.env.local`
-- A TypeScript error that prevented the build
+The most common cause is a missing `apps/web/.env.local` file or a corrupt one. The app uses placeholder Supabase values by default, so missing credentials alone will not cause a blank page — but an `.env.local` with a malformed URL (not empty, but invalid) can.
+
+Steps to diagnose:
+1. Open browser DevTools → Console → look for any red errors
+2. Confirm `apps/web/.env.local` exists (copy from `apps/web/.env.example` if missing)
+3. Hard-refresh (`Ctrl+Shift+R`) to clear any stale cached bundle
+4. If the error mentions `supabaseUrl`, check that `VITE_SUPABASE_URL` is either a valid HTTPS URL or left unset (blank)
+
+### TypeScript build errors on Vercel
+
+The most common causes:
+- A component using `onChange` on `<Select>` — use `onChange` (the component accepts it as an alias for `onValueChange`)
+- Status values (`'on-hold'`, `'completed'`, `'abandoned'`) are not in the schema — valid values are: `idea`, `in-progress`, `mixing`, `mastering`, `done`, `shelved`
+- CSS side-effect imports failing — `src/vite-env.d.ts` must exist with `/// <reference types="vite/client" />`
+- `import.meta.env` not typed — same fix as above
+
+Run `pnpm --dir apps/web build` locally before pushing to catch these before Vercel does.
 
 ### Changes not showing on the NAS after deploy
 
 1. Confirm the build completed without errors: `pnpm --dir apps/web build`
 2. Confirm the `dist/` folder was fully copied to the NAS shared folder
 3. Hard-refresh the browser (`Ctrl+Shift+R` or `Cmd+Shift+R`) to bypass cache
+4. If the PWA service worker is caching the old version, go to DevTools → Application → Service Workers → click **Unregister**, then reload
 
 ### Supabase connection errors
 
-- Confirm `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are correct in `.env.local`
+- Confirm `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are correct
 - Confirm `VITE_ENABLE_CLOUD_SYNC=true` if you want to connect (default is `false`)
 - Check the Supabase dashboard to see if your project is paused (free tier projects pause after inactivity)
+- Confirm the migrations have been applied: `supabase db push --project-ref qlzeefbelqmfmoxktyfo`
 
 ### MIDI import produces no note events
 
 - Confirm the file is a valid Type 0 or Type 1 MIDI file (not an Ableton `.als` or Logic `.logicx`)
 - Check that the file is under 25 MB
 - Some MIDI files use non-standard encodings — check the browser console for parse errors
+
+### Tests failing locally
+
+Run:
+```bash
+pnpm --dir apps/web test --run
+```
+
+Common failures:
+- `IndexedDB` errors — the test setup stubs `indexedDB` as `undefined`; if a test imports a service that calls Dexie at module level, it will fail. Keep Dexie calls inside functions, not at the top level of a module.
+- `crypto.randomUUID` errors — the setup polyfills this for jsdom; if a new test environment doesn't have it, add the polyfill to `src/tests/setup.ts`
 
 ---
 
