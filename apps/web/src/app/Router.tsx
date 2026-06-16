@@ -47,7 +47,7 @@ const DocsPage           = lazy(() => import('@/features/marketing/DocsPage').th
 export const router = createBrowserRouter([
   // Public — no shell, no auth required
   {
-    element: <PublicGuard><></></PublicGuard>,
+    element: <PublicGuard />,
     children: [
       { path: '/',     element: wrap(LandingPage) },
       { path: '/login', element: wrap(LoginPage) },

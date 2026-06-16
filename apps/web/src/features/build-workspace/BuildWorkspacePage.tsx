@@ -5,7 +5,7 @@ import { addTextBlock, toggleStageComplete, updateBuildField, recalculateProgres
 import { BlockRenderer } from '@/components/blocks'
 import { Button, Spinner, StatusBadge, PriorityBadge, Badge, useToast } from '@/components/ui'
 import { STAGES } from '@codex/shared'
-import type { Block } from '@codex/shared'
+import type { Block, BuildStatus } from '@codex/shared'
 
 // ─── Stage panel ─────────────────────────────────────────────────────────────
 
@@ -133,7 +133,7 @@ export function BuildWorkspacePage() {
   const navigate    = useNavigate()
   const build       = useBuild(id ?? '')
   const stages      = useBuildStages(id ?? '')
-  const [activeKey, setActiveKey] = useState(STAGES[0].key)
+  const [activeKey, setActiveKey] = useState<string>(STAGES[0].key)
 
   if (build === undefined || stages === undefined) {
     return (
@@ -156,7 +156,7 @@ export function BuildWorkspacePage() {
   const completedCount = stages.filter(s => s.completed).length
 
   async function handleStatusCycle() {
-    const cycle: Array<typeof build.status> = ['in-progress', 'on-hold', 'completed', 'abandoned']
+    const cycle: BuildStatus[] = ['idea', 'in-progress', 'mixing', 'mastering', 'done', 'shelved']
     const idx  = cycle.indexOf(build!.status)
     const next = cycle[(idx + 1) % cycle.length]
     await updateBuildField(build!.id, { status: next })

@@ -101,11 +101,12 @@ export async function importBackup(payload: BackupPayload): Promise<ImportResult
       db.samples, db.presets, db.grooves, db.arrangements],
     async () => {
       const put = async (
-        table: { name: string; bulkPut: (items: unknown[]) => Promise<unknown> },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        table: { bulkPut: (items: any[]) => Promise<unknown> },
         records: unknown[],
       ) => {
         if (!records || records.length === 0) return
-        await table.bulkPut(records)
+        await table.bulkPut(records as any[])
         imported += records.length
       }
 

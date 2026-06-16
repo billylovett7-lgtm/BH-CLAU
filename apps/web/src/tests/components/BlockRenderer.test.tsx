@@ -30,14 +30,14 @@ describe('BlockRenderer — XSS prevention', () => {
     // The evil string should appear as escaped text only
     expect(container.textContent).toContain('<img')
     // The global should not have been set
-    expect((window as Record<string, unknown>)['__xss']).toBeUndefined()
+    expect((window as unknown as Record<string, unknown>)['__xss']).toBeUndefined()
   })
 
   it('TextBlock: script tag is never executed', () => {
     const xss = '<script>window.__scriptRan=true</script>'
     const block = makeBlock('text', { content: xss })
     render(<BlockRenderer block={block} />)
-    expect((window as Record<string, unknown>)['__scriptRan']).toBeUndefined()
+    expect((window as unknown as Record<string, unknown>)['__scriptRan']).toBeUndefined()
   })
 
   it('SourceBlock: renders escaped plain text, no DOM injection', () => {
@@ -47,7 +47,7 @@ describe('BlockRenderer — XSS prevention', () => {
 
     expect(container.querySelector('img')).toBeNull()
     expect(container.textContent).toContain('<img')
-    expect((window as Record<string, unknown>)['__srcXss']).toBeUndefined()
+    expect((window as unknown as Record<string, unknown>)['__srcXss']).toBeUndefined()
   })
 
   it('CardsBlock: card values are text, not HTML', () => {
@@ -66,7 +66,7 @@ describe('BlockRenderer — XSS prevention', () => {
       items: [{ id: '1', title: xss, done: false, priority: 'medium' }],
     })
     render(<BlockRenderer block={block} />)
-    expect((window as Record<string, unknown>)['__checkXss']).toBeUndefined()
+    expect((window as unknown as Record<string, unknown>)['__checkXss']).toBeUndefined()
   })
 })
 

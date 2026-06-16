@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
-import { Button, Input, Select, Badge, Spinner, useToast } from '@/components/ui'
+import { Button, Input, Select, Spinner, useToast } from '@/components/ui'
 import { BlockRenderer } from '@/components/blocks'
 import { createImportJob, findDuplicateJob, markJobDone, detectFileType } from '@/services/importService'
 import { createBuild, addTextBlock } from '@/services/buildService'
@@ -173,14 +173,7 @@ function PreviewPanel({ blocks }: { blocks: Block[] }) {
   )
 }
 
-// ─── Job history ──────────────────────────────────────────────────────────────
 
-function StatusChip({ status }: { status: ImportJob['status'] }) {
-  const map: Record<string, 'success' | 'warning' | 'danger' | 'cyan' | 'default'> = {
-    done: 'success', error: 'danger', preview: 'cyan', saving: 'warning',
-  }
-  return <Badge variant={map[status] ?? 'default'}>{status}</Badge>
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 

@@ -30,8 +30,8 @@ function ChainDetail({ rack, onClose }: { rack: ChainRack; onClose: () => void }
             <h3 className="lib-section__title">Devices ({rack.devices.length})</h3>
             <div className="lib-chip-list">
               {rack.devices.map((d, i) => (
-                <Badge key={i} variant={d.active ? 'lime' : 'default'}>
-                  {d.name}{d.bypassed ? ' [bypassed]' : ''}
+                <Badge key={i} variant={d.enabled ? 'lime' : 'default'}>
+                  {d.name}
                 </Badge>
               ))}
             </div>

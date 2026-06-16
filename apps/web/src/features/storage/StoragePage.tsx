@@ -4,7 +4,6 @@ import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { Button, Spinner, useToast } from '@/components/ui'
 import { exportBackup, downloadBackup, importBackupFromFile } from '@/services/backup'
 import { purgeWorkspace } from '@/services/localDb'
-import { clearLocalIdentity } from '@/lib/localIdentity'
 
 // ─── Stat row ─────────────────────────────────────────────────────────────────
 

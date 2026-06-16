@@ -1,13 +1,8 @@
-import { Navigate } from 'react-router-dom'
-import type { ReactNode } from 'react'
+import { Navigate, Outlet } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { cloudSyncEnabled } from '@/lib/supabaseClient'
 
-interface PublicGuardProps {
-  children: ReactNode
-}
-
-export function PublicGuard({ children }: PublicGuardProps) {
+export function PublicGuard() {
   const { user, initialized } = useAuthStore()
 
   // With cloud sync enabled, redirect authenticated users away from login/landing
@@ -15,5 +10,5 @@ export function PublicGuard({ children }: PublicGuardProps) {
     return <Navigate to="/dashboard" replace />
   }
 
-  return <>{children}</>
+  return <Outlet />
 }

@@ -17,7 +17,7 @@ export function PublicBuildPage() {
     stages: Record<string, unknown>[]
     blocks: Record<string, unknown>[]
   } | null>(null)
-  const [activeKey, setActiveKey] = useState(STAGES[0].key)
+  const [activeKey, setActiveKey] = useState<string>(STAGES[0].key)
 
   useEffect(() => {
     if (!cloudSyncEnabled) { setState('local-only'); return }

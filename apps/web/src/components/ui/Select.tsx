@@ -10,6 +10,7 @@ interface SelectProps {
   value?:          string
   defaultValue?:   string
   onValueChange?:  (value: string) => void
+  onChange?:       (value: string) => void
   placeholder?:    string
   label?:          string
   error?:          string
@@ -24,6 +25,7 @@ export function Select({
   value,
   defaultValue,
   onValueChange,
+  onChange,
   placeholder = 'Select…',
   label,
   error,
@@ -47,7 +49,7 @@ export function Select({
       <RadixSelect.Root
         value={value}
         defaultValue={defaultValue}
-        onValueChange={onValueChange}
+        onValueChange={onValueChange ?? onChange}
         disabled={disabled}
       >
         <RadixSelect.Trigger

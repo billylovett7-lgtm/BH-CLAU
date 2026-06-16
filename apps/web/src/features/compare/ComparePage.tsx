@@ -52,7 +52,7 @@ export function ComparePage() {
   const builds          = useBuilds(workspaceId)
   const [leftId,  setLeftId]  = useState('')
   const [rightId, setRightId] = useState('')
-  const [stageKey, setStageKey] = useState(STAGES[0].key)
+  const [stageKey, setStageKey] = useState<string>(STAGES[0].key)
 
   if (builds === undefined) return <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-16)' }}><Spinner size="lg" /></div>
 

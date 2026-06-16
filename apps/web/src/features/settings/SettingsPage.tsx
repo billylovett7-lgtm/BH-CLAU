@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Input, Button, useToast } from '@/components/ui'
+import { Button, useToast } from '@/components/ui'
 import { cloudSyncEnabled } from '@/lib/supabaseClient'
 import { getLocalIdentity, clearLocalIdentity } from '@/lib/localIdentity'
 import { signOut } from '@/services/authService'

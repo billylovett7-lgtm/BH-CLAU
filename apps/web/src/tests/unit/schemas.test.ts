@@ -1,15 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import {
   buildSchema,
-  buildStageSchema,
   blockSchema,
   chainRackSchema,
   midiPatternSchema,
-  sampleSchema,
-  presetSchema,
-  grooveSchema,
-  arrangementSchema,
-  importJobSchema,
   shareLinkSchema,
 } from '@codex/shared'
 

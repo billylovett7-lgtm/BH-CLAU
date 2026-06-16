@@ -4,7 +4,7 @@ import { Button, Input, Select, useToast } from '@/components/ui'
 import { createBuild } from '@/services/buildService'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { GENRES, TEMPLATES } from '@codex/shared'
-import type { BuildTemplate } from '@codex/shared'
+import type { BuildTemplate, BuildStatus } from '@codex/shared'
 
 // ─── Key options ──────────────────────────────────────────────────────────────
 
@@ -23,8 +23,12 @@ const GENRE_OPTIONS = [
 ]
 
 const STATUS_OPTIONS = [
+  { value: 'idea',        label: 'Idea'        },
   { value: 'in-progress', label: 'In Progress' },
-  { value: 'on-hold',     label: 'On Hold'     },
+  { value: 'mixing',      label: 'Mixing'      },
+  { value: 'mastering',   label: 'Mastering'   },
+  { value: 'done',        label: 'Done'        },
+  { value: 'shelved',     label: 'Shelved'     },
 ]
 
 const PRIORITY_OPTIONS = [
@@ -106,7 +110,7 @@ export function NewBuildPage() {
           genre:    genre || undefined,
           bpm:      bpm ? parseFloat(bpm) : null,
           key:      key || null,
-          status:   status as 'in-progress' | 'on-hold',
+          status:   status as BuildStatus,
           priority: priority as 'high' | 'medium' | 'low',
         },
         userId,

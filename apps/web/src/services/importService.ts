@@ -44,7 +44,7 @@ export async function runParser(
 ): Promise<ImportResult> {
   if (fileType === 'midi') {
     const buf = await file.arrayBuffer()
-    return parseMidi(new Uint8Array(buf), file.name)
+    return parseMidi(buf, file.name)
   }
 
   const text = await file.text()
@@ -110,6 +110,6 @@ export async function createImportJob(
   }
 }
 
-export async function markJobDone(jobId: string, job: ImportJob): Promise<void> {
+export async function markJobDone(_jobId: string, job: ImportJob): Promise<void> {
   await upsertImportJob({ ...job, status: 'done' })
 }

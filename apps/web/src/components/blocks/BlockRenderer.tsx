@@ -30,6 +30,7 @@ export function BlockRenderer({ block }: Props) {
     case 'source':      return <SourceBlock    block={block} />
     default: {
       const _exhaustive: never = block
+      void _exhaustive
       return null
     }
   }

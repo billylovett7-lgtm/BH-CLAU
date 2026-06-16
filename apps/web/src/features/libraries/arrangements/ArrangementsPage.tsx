@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useArrangements } from '@/hooks/useLibrary'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { Badge, Spinner, EmptyState } from '@/components/ui'
