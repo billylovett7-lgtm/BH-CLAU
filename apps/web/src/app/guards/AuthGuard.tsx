@@ -4,10 +4,10 @@ import { cloudSyncEnabled } from '@/lib/supabaseClient'
 import { Spinner } from '@/components/ui'
 
 export function AuthGuard() {
-  const { user, initialized } = useAuthStore()
+  const { user, initialized, guestMode } = useAuthStore()
 
-  // Cloud sync off → no auth required, pass through for local-only mode
-  if (!cloudSyncEnabled) return <Outlet />
+  // Cloud sync off, or user chose to continue without signing in
+  if (!cloudSyncEnabled || guestMode) return <Outlet />
 
   // Still resolving initial session
   if (!initialized) {

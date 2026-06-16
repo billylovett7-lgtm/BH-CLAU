@@ -3,10 +3,17 @@ import { useNavigate } from 'react-router-dom'
 import { Button, Input, useToast } from '@/components/ui'
 import { signInWithEmail, signInWithGoogle } from '@/services/authService'
 import { cloudSyncEnabled } from '@/lib/supabaseClient'
+import { useAuthStore } from '@/store/authStore'
 
 export function LoginPage() {
-  const navigate = useNavigate()
-  const { toast } = useToast()
+  const navigate    = useNavigate()
+  const { toast }   = useToast()
+  const setGuestMode = useAuthStore(s => s.setGuestMode)
+
+  function continueAsGuest() {
+    setGuestMode(true)
+    navigate('/dashboard', { replace: true })
+  }
 
   const [email,   setEmail]   = useState('')
   const [sending, setSending] = useState(false)
@@ -54,7 +61,7 @@ export function LoginPage() {
         {!cloudSyncEnabled && (
           <div className="login-local-banner">
             <span>You are in local mode. No account required.</span>
-            <Button variant="primary" size="md" onClick={() => navigate('/dashboard')}>
+            <Button variant="primary" size="md" onClick={continueAsGuest}>
               Enter app
             </Button>
           </div>
@@ -108,7 +115,7 @@ export function LoginPage() {
 
             <p className="login-footer">
               No account needed for local-only use.{' '}
-              <button className="login-footer__link" onClick={() => navigate('/dashboard')}>
+              <button className="login-footer__link" onClick={continueAsGuest}>
                 Continue without signing in
               </button>
             </p>
