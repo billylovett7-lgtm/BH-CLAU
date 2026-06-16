@@ -1,0 +1,42 @@
+@media print {
+  :root {
+    --color-bg: #ffffff;
+    --color-bg-1: #f8f8f8;
+    --color-surface: #f0f0f0;
+    --color-text: #0a0a0a;
+    --color-text-muted: #444444;
+    --color-border: #cccccc;
+  }
+
+  body {
+    background: white;
+    color: black;
+    font-size: 11pt;
+  }
+
+  /* Hide interactive elements */
+  nav,
+  [data-print-hide],
+  .mobile-nav,
+  .command-palette,
+  .sync-status,
+  button:not([data-print-show]) {
+    display: none !important;
+  }
+
+  /* Ensure content fills the page */
+  .print-content {
+    width: 100%;
+    max-width: none;
+  }
+
+  /* Page breaks */
+  .stage-section { page-break-inside: avoid; }
+  h2, h3 { page-break-after: avoid; }
+
+  a[href]::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.8em;
+    color: #666;
+  }
+}
