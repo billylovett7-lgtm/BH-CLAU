@@ -1,35 +1,26 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { PageShell } from '@/components/layout/PageShell'
+import { AuthGuard } from './guards/AuthGuard'
+import { PublicGuard } from './guards/PublicGuard'
+import { Spinner } from '@/components/ui'
 
-function Loading() {
+function PageLoader() {
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        color: 'var(--color-text-muted)',
-        fontSize: 'var(--text-sm)',
-        letterSpacing: '0.1em',
-        textTransform: 'uppercase',
-      }}
-    >
-      Loading…
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
+      <Spinner size="md" />
     </div>
   )
 }
 
 function wrap(Component: React.LazyExoticComponent<() => JSX.Element>) {
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense fallback={<PageLoader />}>
       <Component />
     </Suspense>
   )
 }
 
-// Lazy-loaded pages — each is a separate bundle chunk
 const LandingPage        = lazy(() => import('@/features/marketing/LandingPage').then(m => ({ default: m.LandingPage })))
 const LoginPage          = lazy(() => import('@/features/auth/LoginPage').then(m => ({ default: m.LoginPage })))
 const DashboardPage      = lazy(() => import('@/features/dashboard/DashboardPage').then(m => ({ default: m.DashboardPage })))
@@ -54,39 +45,44 @@ const PublicBuildPage    = lazy(() => import('@/features/public-share/PublicBuil
 const DocsPage           = lazy(() => import('@/features/marketing/DocsPage').then(m => ({ default: m.DocsPage })))
 
 export const router = createBrowserRouter([
-  // Public — no shell
-  { path: '/',                element: wrap(LandingPage) },
-  { path: '/login',           element: wrap(LoginPage) },
-  { path: '/public/:shareSlug', element: wrap(PublicBuildPage) },
-  { path: '/docs',            element: wrap(DocsPage) },
-
-  // Print view — no shell
-  { path: '/builds/:buildId/print', element: wrap(BuildPrintPage) },
-
-  // App shell — all authenticated routes
+  // Public — no shell, no auth required
   {
-    element: <PageShell />,
+    element: <PublicGuard><></></PublicGuard>,
     children: [
-      { path: '/dashboard',                           element: wrap(DashboardPage) },
-      { path: '/builds',                              element: wrap(BuildsPage) },
-      { path: '/builds/new',                          element: wrap(NewBuildPage) },
-      { path: '/builds/:buildId',                     element: wrap(BuildWorkspacePage) },
-      { path: '/import',                              element: wrap(ImportPage) },
-      { path: '/libraries/chains',                    element: wrap(ChainsPage) },
-      { path: '/libraries/midi',                      element: wrap(MidiPage) },
-      { path: '/libraries/midi/:patternId',           element: wrap(MidiPatternDetail) },
-      { path: '/libraries/samples',                   element: wrap(SamplesPage) },
-      { path: '/libraries/presets',                   element: wrap(PresetsPage) },
-      { path: '/libraries/grooves',                   element: wrap(GroovesPage) },
-      { path: '/libraries/arrangements',              element: wrap(ArrangementsPage) },
-      { path: '/libraries/arrangements/:arrangementId', element: wrap(ArrangementDetail) },
-      { path: '/compare',                             element: wrap(ComparePage) },
-      { path: '/qa',                                  element: wrap(QaPage) },
-      { path: '/storage',                             element: wrap(StoragePage) },
-      { path: '/settings',                            element: wrap(SettingsPage) },
+      { path: '/',     element: wrap(LandingPage) },
+      { path: '/login', element: wrap(LoginPage) },
     ],
   },
+  { path: '/public/:shareSlug', element: wrap(PublicBuildPage) },
+  { path: '/docs',              element: wrap(DocsPage) },
+  { path: '/builds/:buildId/print', element: wrap(BuildPrintPage) },
 
-  // Catch-all
+  // Authenticated app — AuthGuard → PageShell → route content
+  {
+    element: <AuthGuard />,
+    children: [{
+      element: <PageShell />,
+      children: [
+        { path: '/dashboard',                              element: wrap(DashboardPage) },
+        { path: '/builds',                                 element: wrap(BuildsPage) },
+        { path: '/builds/new',                             element: wrap(NewBuildPage) },
+        { path: '/builds/:buildId',                        element: wrap(BuildWorkspacePage) },
+        { path: '/import',                                 element: wrap(ImportPage) },
+        { path: '/libraries/chains',                       element: wrap(ChainsPage) },
+        { path: '/libraries/midi',                         element: wrap(MidiPage) },
+        { path: '/libraries/midi/:patternId',              element: wrap(MidiPatternDetail) },
+        { path: '/libraries/samples',                      element: wrap(SamplesPage) },
+        { path: '/libraries/presets',                      element: wrap(PresetsPage) },
+        { path: '/libraries/grooves',                      element: wrap(GroovesPage) },
+        { path: '/libraries/arrangements',                 element: wrap(ArrangementsPage) },
+        { path: '/libraries/arrangements/:arrangementId',  element: wrap(ArrangementDetail) },
+        { path: '/compare',                                element: wrap(ComparePage) },
+        { path: '/qa',                                     element: wrap(QaPage) },
+        { path: '/storage',                                element: wrap(StoragePage) },
+        { path: '/settings',                               element: wrap(SettingsPage) },
+      ],
+    }],
+  },
+
   { path: '*', element: <Navigate to="/" replace /> },
 ])
