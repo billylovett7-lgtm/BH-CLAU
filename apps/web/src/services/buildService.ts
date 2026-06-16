@@ -1,16 +1,18 @@
-import { upsertBuild, upsertBuildStages, upsertBlock, deleteBlock, db } from './localDb'
+import { upsertBuild, upsertBuildStages, upsertBlocks, upsertBlock, deleteBlock, db } from './localDb'
 import type { Build, BuildStage, Block, TextBlock } from '@codex/shared'
 import { STAGES } from '@codex/shared'
+import { buildSeedBlocks } from './stageSeeds'
 
 // ─── Create ───────────────────────────────────────────────────────────────────
 
 interface CreateBuildInput {
-  title:    string
-  genre?:   string
-  bpm?:     number | null
-  key?:     string | null
-  status?:  Build['status']
-  priority?: Build['priority']
+  title:      string
+  genre?:     string
+  bpm?:       number | null
+  key?:       string | null
+  status?:    Build['status']
+  priority?:  Build['priority']
+  templateId?: string
 }
 
 export async function createBuild(
@@ -60,6 +62,7 @@ export async function createBuild(
 
   await upsertBuild(build)
   await upsertBuildStages(stages)
+  await upsertBlocks(buildSeedBlocks(id, input.templateId))
 
   return id
 }

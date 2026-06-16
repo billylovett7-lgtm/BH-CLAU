@@ -106,12 +106,13 @@ export function NewBuildPage() {
     try {
       const id = await createBuild(
         {
-          title:    title.trim(),
-          genre:    genre || undefined,
-          bpm:      bpm ? parseFloat(bpm) : null,
-          key:      key || null,
-          status:   status as BuildStatus,
-          priority: priority as 'high' | 'medium' | 'low',
+          title:      title.trim(),
+          genre:      genre || undefined,
+          bpm:        bpm ? parseFloat(bpm) : null,
+          key:        key || null,
+          status:     status as BuildStatus,
+          priority:   priority as 'high' | 'medium' | 'low',
+          templateId: template?.id,
         },
         userId,
         workspaceId,
