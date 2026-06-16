@@ -20,6 +20,10 @@ supabase/.temp/
 desktop.ini
 Thumbs.db
 
+# Synology Drive sync metadata
+.SynologyWorkingDirectory/
+@eaDir/
+
 # Editor
 .vscode/
 .idea/
