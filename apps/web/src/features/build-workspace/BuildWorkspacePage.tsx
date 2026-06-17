@@ -36,6 +36,8 @@ function MetaEditor({ build, onClose }: {
   const [priority, setPriority] = useState(build.priority)
   const [dueDate,  setDueDate]  = useState(build.dueDate ? build.dueDate.slice(0, 10) : '')
   const [notes,    setNotes]    = useState(build.notes ?? '')
+  const [tags,     setTags]     = useState<string[]>(build.tags ?? [])
+  const [tagInput, setTagInput] = useState('')
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
@@ -49,6 +51,7 @@ function MetaEditor({ build, onClose }: {
         priority: priority as Build['priority'],
         dueDate:  dueDate ? new Date(dueDate).toISOString() : null,
         notes:    notes,
+        tags:     tags,
       })
       onClose()
     } catch (err) {
@@ -95,6 +98,38 @@ function MetaEditor({ build, onClose }: {
           title="Due date"
         />
       </div>
+      {/* Tags */}
+      <div className="ws-meta-tags">
+        {tags.map(tag => (
+          <span key={tag} className="ws-meta-tag">
+            {tag}
+            <button
+              type="button"
+              className="ws-meta-tag__del"
+              onClick={() => setTags(tags.filter(t => t !== tag))}
+              aria-label={`Remove tag ${tag}`}
+            >×</button>
+          </span>
+        ))}
+        <input
+          className="ws-meta-tag-input"
+          value={tagInput}
+          onChange={e => setTagInput(e.target.value)}
+          onKeyDown={e => {
+            if ((e.key === 'Enter' || e.key === ',') && tagInput.trim()) {
+              e.preventDefault()
+              const tag = tagInput.trim().toLowerCase().replace(/,/g, '')
+              if (tag && !tags.includes(tag)) setTags([...tags, tag])
+              setTagInput('')
+            }
+            if (e.key === 'Backspace' && !tagInput && tags.length) {
+              setTags(tags.slice(0, -1))
+            }
+          }}
+          placeholder={tags.length === 0 ? 'Add tags… (Enter or comma)' : ''}
+        />
+      </div>
+
       <textarea
         className="ws-meta-input ws-meta-textarea"
         value={notes}
@@ -371,6 +406,13 @@ export function BuildWorkspacePage() {
                 {build.notes && (
                   <div className="ws-notes">{build.notes}</div>
                 )}
+                {build.tags.length > 0 && (
+                  <div className="ws-tags">
+                    {build.tags.map(tag => (
+                      <span key={tag} className="ws-tag">{tag}</span>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="ws-header-actions">
                 <ProgressRing pct={build.progress} />
@@ -450,6 +492,12 @@ export function BuildWorkspacePage() {
         .ws-meta-input:focus { border-color:var(--color-accent-cyan); }
         .ws-meta-input--title { font-size:var(--text-base); font-weight:var(--font-weight-semibold); }
         .ws-meta-textarea { resize:vertical; min-height:60px; }
+        .ws-meta-tags { display:flex; flex-wrap:wrap; gap:var(--space-1); align-items:center; padding:var(--space-2) var(--space-3); background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); min-height:34px; cursor:text; }
+        .ws-meta-tags:focus-within { border-color:var(--color-accent-cyan); }
+        .ws-meta-tag { display:inline-flex; align-items:center; gap:2px; padding:1px 6px; background:var(--color-bg-3); border-radius:var(--radius-sm); font-size:var(--text-xs); color:var(--color-text-muted); }
+        .ws-meta-tag__del { background:none; border:none; color:var(--color-text-faint); cursor:pointer; font-size:12px; line-height:1; padding:0; }
+        .ws-meta-tag__del:hover { color:var(--color-danger); }
+        .ws-meta-tag-input { background:none; border:none; outline:none; font-size:var(--text-sm); color:var(--color-text); min-width:100px; flex:1; }
         .ws-meta-select { padding:var(--space-2) var(--space-3); background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); color:var(--color-text); font-size:var(--text-sm); outline:none; }
         .ws-meta-select:focus { border-color:var(--color-accent-cyan); }
         .ws-meta-row { display:flex; gap:var(--space-2); flex-wrap:wrap; }
@@ -459,6 +507,8 @@ export function BuildWorkspacePage() {
         .ws-title { font-size:var(--text-xl); font-weight:var(--font-weight-bold); color:var(--color-text); margin:0 0 var(--space-1); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:500px; }
         .ws-meta { font-size:var(--text-sm); color:var(--color-text-faint); text-transform:capitalize; }
         .ws-notes { font-size:var(--text-sm); color:var(--color-text-faint); margin-top:var(--space-1); font-style:italic; white-space:pre-wrap; }
+        .ws-tags { display:flex; flex-wrap:wrap; gap:var(--space-1); margin-top:var(--space-1); }
+        .ws-tag { font-size:var(--text-xs); padding:1px 6px; background:var(--color-bg-3); border-radius:var(--radius-sm); color:var(--color-text-faint); }
         .ws-header-actions { display:flex; align-items:center; gap:var(--space-3); flex-shrink:0; }
         .ws-header-badges { display:flex; flex-direction:column; align-items:flex-end; gap:var(--space-1); }
         .ws-status-btn { background:none; border:none; padding:0; cursor:pointer; }

@@ -72,7 +72,7 @@ export async function createBuild(
 
 export async function updateBuildField(
   id:     string,
-  fields: Partial<Pick<Build, 'title' | 'genre' | 'bpm' | 'key' | 'status' | 'priority' | 'currentStage' | 'progress' | 'notes' | 'dueDate'>>,
+  fields: Partial<Pick<Build, 'title' | 'genre' | 'bpm' | 'key' | 'status' | 'priority' | 'currentStage' | 'progress' | 'notes' | 'dueDate' | 'tags'>>,
 ): Promise<void> {
   await db.builds.update(id, { ...fields, updatedAt: new Date().toISOString() })
 }
