@@ -12,6 +12,7 @@ interface CreateBuildInput {
   key?:       string | null
   status?:    Build['status']
   priority?:  Build['priority']
+  dueDate?:   string | null
   templateId?: string
 }
 
@@ -36,7 +37,7 @@ export async function createBuild(
     root:           null,
     status:         input.status   ?? 'in-progress',
     priority:       input.priority ?? 'medium',
-    dueDate:        null,
+    dueDate:        input.dueDate ?? null,
     favourite:      false,
     archived:       false,
     tags:           [],
@@ -71,7 +72,7 @@ export async function createBuild(
 
 export async function updateBuildField(
   id:     string,
-  fields: Partial<Pick<Build, 'title' | 'genre' | 'bpm' | 'key' | 'status' | 'priority' | 'currentStage' | 'progress' | 'notes'>>,
+  fields: Partial<Pick<Build, 'title' | 'genre' | 'bpm' | 'key' | 'status' | 'priority' | 'currentStage' | 'progress' | 'notes' | 'dueDate'>>,
 ): Promise<void> {
   await db.builds.update(id, { ...fields, updatedAt: new Date().toISOString() })
 }

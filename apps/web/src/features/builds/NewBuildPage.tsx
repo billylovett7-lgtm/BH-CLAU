@@ -83,6 +83,7 @@ export function NewBuildPage() {
   const [key,      setKey]      = useState('')
   const [status,   setStatus]   = useState('in-progress')
   const [priority, setPriority] = useState('medium')
+  const [dueDate,  setDueDate]  = useState('')
   const [template, setTemplate] = useState<BuildTemplate | null>(null)
   const [saving,   setSaving]   = useState(false)
 
@@ -112,6 +113,7 @@ export function NewBuildPage() {
           key:        key || null,
           status:     status as BuildStatus,
           priority:   priority as 'high' | 'medium' | 'low',
+          dueDate:    dueDate ? new Date(dueDate).toISOString() : null,
           templateId: template?.id,
         },
         userId,
@@ -193,6 +195,15 @@ export function NewBuildPage() {
                 <label className="field__label">Priority</label>
                 <Select value={priority} onChange={setPriority} options={PRIORITY_OPTIONS} />
               </div>
+              <div style={{ flex: 1 }}>
+                <label className="field__label">Due date</label>
+                <input
+                  type="date"
+                  className="new-build-date"
+                  value={dueDate}
+                  onChange={e => setDueDate(e.target.value)}
+                />
+              </div>
             </div>
           </div>
         </section>
@@ -228,6 +239,8 @@ export function NewBuildPage() {
         .tpl-card__tags { display:flex; flex-wrap:wrap; gap:4px; }
         .tpl-tag { font-size:var(--text-xs); padding:2px 6px; background:var(--color-bg-3); border-radius:var(--radius-sm); color:var(--color-text-faint); }
         .field__label { display:block; font-size:var(--text-sm); font-weight:var(--font-weight-medium); color:var(--color-text-muted); margin-bottom:var(--space-1); }
+        .new-build-date { width:100%; padding:var(--space-2) var(--space-3); background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-md); color:var(--color-text); font-size:var(--text-sm); font-family:inherit; outline:none; height:38px; }
+        .new-build-date:focus { border-color:var(--color-accent-cyan); }
       `}</style>
     </div>
   )

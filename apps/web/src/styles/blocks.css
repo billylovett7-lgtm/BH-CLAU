@@ -207,6 +207,78 @@
 .block-checklist__priority--medium { background: rgba(245,166,35,0.12);  color: var(--color-warning); }
 .block-checklist__priority--low    { background: var(--color-bg-3);       color: var(--color-text-faint); }
 
+.block-checklist__edit-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-accent-cyan);
+  color: var(--color-text);
+  font-size: var(--text-base);
+  font-family: inherit;
+  outline: none;
+  padding: 0;
+}
+
+.block-checklist__del {
+  background: none;
+  border: none;
+  color: var(--color-text-faint);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 2px;
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity var(--transition-fast), color var(--transition-fast);
+}
+.block-checklist__item:hover .block-checklist__del { opacity: 1; }
+.block-checklist__del:hover { color: var(--color-danger); }
+
+.block-checklist__footer { padding: var(--space-2) 0 0; }
+
+.block-checklist__add-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-faint);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--transition-fast);
+}
+.block-checklist__add-btn:hover { color: var(--color-accent-cyan); }
+
+.block-checklist__add-form {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.block-checklist__add-input {
+  flex: 1;
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-accent-cyan);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  outline: none;
+}
+
+.block-checklist__add-confirm,
+.block-checklist__add-cancel {
+  background: none;
+  border: none;
+  font-size: var(--text-xs);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+.block-checklist__add-confirm { background: var(--color-accent-cyan); color: var(--color-bg); font-weight: var(--font-weight-medium); }
+.block-checklist__add-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.block-checklist__add-cancel { color: var(--color-text-faint); }
+.block-checklist__add-cancel:hover { color: var(--color-text); }
+
 /* ─── Timeline block ──────────────────────────────────────────────────────── */
 
 .block-timeline__sections {

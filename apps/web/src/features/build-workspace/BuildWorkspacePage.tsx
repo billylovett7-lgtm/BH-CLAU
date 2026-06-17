@@ -34,6 +34,7 @@ function MetaEditor({ build, onClose }: {
   const [key,      setKey]      = useState(build.key ?? '')
   const [genre,    setGenre]    = useState(build.genre ?? '')
   const [priority, setPriority] = useState(build.priority)
+  const [dueDate,  setDueDate]  = useState(build.dueDate ? build.dueDate.slice(0, 10) : '')
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
@@ -45,6 +46,7 @@ function MetaEditor({ build, onClose }: {
         key:      key  || null,
         genre:    genre || '',
         priority: priority as Build['priority'],
+        dueDate:  dueDate ? new Date(dueDate).toISOString() : null,
       })
       onClose()
     } catch (err) {
@@ -83,6 +85,13 @@ function MetaEditor({ build, onClose }: {
           <option value="medium">Medium</option>
           <option value="low">Low</option>
         </select>
+        <input
+          className="ws-meta-input"
+          type="date"
+          value={dueDate}
+          onChange={e => setDueDate(e.target.value)}
+          title="Due date"
+        />
       </div>
       <div className="ws-meta-actions">
         <Button type="submit" variant="primary" size="sm">Save</Button>
