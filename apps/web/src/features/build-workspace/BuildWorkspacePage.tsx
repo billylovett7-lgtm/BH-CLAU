@@ -1,11 +1,44 @@
 import { useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useBuild, useBuildStages, useStageBlocks } from '@/hooks/useBuild'
-import { addTextBlock, toggleStageComplete, updateBuildField, recalculateProgress, removeBlock } from '@/services/buildService'
+import { toggleStageComplete, updateBuildField, recalculateProgress, removeBlock, updateBlock, createBlock } from '@/services/buildService'
 import { BlockRenderer } from '@/components/blocks'
 import { Button, Spinner, StatusBadge, PriorityBadge, Badge, useToast } from '@/components/ui'
 import { STAGES } from '@codex/shared'
 import type { Block, BuildStatus } from '@codex/shared'
+
+// ─── Block type picker ────────────────────────────────────────────────────────
+
+type AddMode = 'picker' | 'text' | null
+
+const BLOCK_TYPES = [
+  { type: 'text',      label: 'Text note',  icon: '¶' },
+  { type: 'checklist', label: 'Checklist',  icon: '✓' },
+  { type: 'cards',     label: 'Cards',      icon: '⊞' },
+  { type: 'table',     label: 'Table',      icon: '⊟' },
+] as const
+
+type QuickBlockType = typeof BLOCK_TYPES[number]['type']
+
+function defaultPayload(type: QuickBlockType): Omit<Block, 'id' | 'buildId' | 'stageKey' | 'order' | 'locked'> {
+  switch (type) {
+    case 'text':
+      return { type: 'text', data: { content: '' } }
+    case 'checklist':
+      return { type: 'checklist', data: { items: [
+        { id: crypto.randomUUID(), text: 'New item', completed: false, priority: 'medium' as const },
+      ] } }
+    case 'cards':
+      return { type: 'cards', data: { cards: [
+        { label: 'Label', value: 'Value', variant: 'default' as const },
+      ] } }
+    case 'table':
+      return { type: 'table', data: {
+        headers: ['Column 1', 'Column 2', 'Column 3'],
+        rows:    [['', '', ''], ['', '', '']],
+      } }
+  }
+}
 
 // ─── Stage panel ─────────────────────────────────────────────────────────────
 
@@ -15,22 +48,31 @@ function StagePanel({ buildId, stageKey, stageId, completed }: {
   stageId:   string
   completed: boolean
 }) {
-  const { toast }     = useToast()
-  const blocks        = useStageBlocks(buildId, stageKey)
-  const [adding, setAdding] = useState(false)
-  const textareaRef   = useRef<HTMLTextAreaElement>(null)
+  const { toast }   = useToast()
+  const blocks      = useStageBlocks(buildId, stageKey)
+  const [mode, setMode] = useState<AddMode>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  async function handleAddNote(e: React.FormEvent<HTMLFormElement>) {
+  async function handleAddText(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const content = textareaRef.current?.value.trim() ?? ''
     if (!content) return
     try {
-      const order = (blocks?.length ?? 0) + 1
-      await addTextBlock(buildId, stageKey, content, order)
+      await createBlock(buildId, stageKey, (blocks?.length ?? 0) + 1, { type: 'text', data: { content } })
       if (textareaRef.current) textareaRef.current.value = ''
-      setAdding(false)
+      setMode(null)
     } catch (err) {
-      toast({ title: 'Failed to add note', description: String(err), variant: 'error' })
+      toast({ title: 'Failed to add block', description: String(err), variant: 'error' })
+    }
+  }
+
+  async function handlePickType(type: QuickBlockType) {
+    if (type === 'text') { setMode('text'); return }
+    try {
+      await createBlock(buildId, stageKey, (blocks?.length ?? 0) + 1, defaultPayload(type))
+      setMode(null)
+    } catch (err) {
+      toast({ title: 'Failed to add block', description: String(err), variant: 'error' })
     }
   }
 
@@ -39,12 +81,14 @@ function StagePanel({ buildId, stageKey, stageId, completed }: {
     await recalculateProgress(buildId)
   }
 
+  async function handleUpdateBlock(block: Block) {
+    try { await updateBlock(block) }
+    catch (err) { toast({ title: 'Failed to save', description: String(err), variant: 'error' }) }
+  }
+
   async function handleRemoveBlock(block: Block) {
-    try {
-      await removeBlock(block.id)
-    } catch (err) {
-      toast({ title: 'Failed to remove block', description: String(err), variant: 'error' })
-    }
+    try { await removeBlock(block.id) }
+    catch (err) { toast({ title: 'Failed to remove block', description: String(err), variant: 'error' }) }
   }
 
   return (
@@ -64,13 +108,13 @@ function StagePanel({ buildId, stageKey, stageId, completed }: {
       {/* Blocks */}
       {blocks === undefined
         ? <Spinner size="sm" />
-        : blocks.length === 0 && !adding
-          ? <p className="stage-empty">No notes yet. Add a note to get started.</p>
+        : blocks.length === 0 && !mode
+          ? <p className="stage-empty">Nothing here yet — add a block below.</p>
           : (
             <div className="stage-blocks">
               {blocks.map(block => (
                 <div key={block.id} className="stage-block-wrap">
-                  <BlockRenderer block={block} />
+                  <BlockRenderer block={block} onUpdate={handleUpdateBlock} />
                   <button
                     type="button"
                     className="stage-block-remove"
@@ -83,29 +127,44 @@ function StagePanel({ buildId, stageKey, stageId, completed }: {
           )
       }
 
-      {/* Add note form */}
-      {adding
-        ? (
-          <form onSubmit={handleAddNote} className="stage-add-form">
-            <textarea
-              ref={textareaRef}
-              className="stage-add-textarea"
-              placeholder="Add a note…"
-              rows={4}
-              autoFocus
-            />
-            <div className="stage-add-actions">
-              <Button type="submit" variant="primary" size="sm">Add note</Button>
-              <Button type="button" variant="ghost" size="sm" onClick={() => setAdding(false)}>Cancel</Button>
-            </div>
-          </form>
-        )
-        : (
-          <button type="button" className="stage-add-btn" onClick={() => setAdding(true)}>
-            + Add text note
+      {/* Block type picker */}
+      {mode === 'picker' && (
+        <div className="stage-type-picker">
+          {BLOCK_TYPES.map(bt => (
+            <button key={bt.type} type="button" className="stage-type-btn" onClick={() => handlePickType(bt.type)}>
+              <span className="stage-type-btn__icon">{bt.icon}</span>
+              <span>{bt.label}</span>
+            </button>
+          ))}
+          <button type="button" className="stage-type-btn stage-type-btn--cancel" onClick={() => setMode(null)}>
+            Cancel
           </button>
-        )
-      }
+        </div>
+      )}
+
+      {/* Text input */}
+      {mode === 'text' && (
+        <form onSubmit={handleAddText} className="stage-add-form">
+          <textarea
+            ref={textareaRef}
+            className="stage-add-textarea"
+            placeholder="Add a note…"
+            rows={4}
+            autoFocus
+          />
+          <div className="stage-add-actions">
+            <Button type="submit" variant="primary" size="sm">Add note</Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setMode(null)}>Cancel</Button>
+          </div>
+        </form>
+      )}
+
+      {/* Add block button */}
+      {!mode && (
+        <button type="button" className="stage-add-btn" onClick={() => setMode('picker')}>
+          + Add block
+        </button>
+      )}
     </div>
   )
 }
@@ -288,6 +347,15 @@ export function BuildWorkspacePage() {
         .stage-add-actions { display:flex; gap:var(--space-2); }
         .stage-add-btn { border:1px dashed var(--color-border); border-radius:var(--radius-md); background:transparent; color:var(--color-text-faint); padding:var(--space-3); width:100%; cursor:pointer; font-size:var(--text-sm); transition:border-color var(--transition-fast),color var(--transition-fast); text-align:center; }
         .stage-add-btn:hover { border-color:var(--color-accent-cyan); color:var(--color-accent-cyan); }
+        .stage-type-picker { display:flex; flex-wrap:wrap; gap:var(--space-2); padding:var(--space-3); background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-md); }
+        .stage-type-btn { display:flex; align-items:center; gap:var(--space-1); padding:var(--space-2) var(--space-3); border:1px solid var(--color-border); border-radius:var(--radius-sm); background:var(--color-bg-2); color:var(--color-text-muted); cursor:pointer; font-size:var(--text-sm); transition:all var(--transition-fast); }
+        .stage-type-btn:hover { border-color:var(--color-accent-cyan); color:var(--color-accent-cyan); background:var(--color-surface-hover); }
+        .stage-type-btn__icon { font-size:var(--text-base); opacity:0.7; }
+        .stage-type-btn--cancel { color:var(--color-text-faint); margin-left:auto; }
+        .block--editable { cursor:pointer; }
+        .block--editable:hover { outline:1px solid var(--color-border); border-radius:var(--radius-md); }
+        .block-text__editor { width:100%; box-sizing:border-box; padding:var(--space-2); background:var(--color-bg-2); border:1px solid var(--color-accent-cyan); border-radius:var(--radius-sm); color:var(--color-text); font-size:var(--text-base); font-family:inherit; resize:vertical; outline:none; line-height:var(--leading-relaxed); }
+        .block-text__hint { font-size:var(--text-xs); color:var(--color-text-faint); margin-top:var(--space-1); }
       `}</style>
     </div>
   )

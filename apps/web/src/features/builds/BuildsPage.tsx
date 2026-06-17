@@ -12,11 +12,13 @@ type StatusFilter   = 'all' | Build['status']
 type PriorityFilter = 'all' | Build['priority']
 
 const STATUS_OPTIONS = [
-  { value: 'all',         label: 'All statuses'   },
-  { value: 'in-progress', label: 'In Progress'    },
-  { value: 'completed',   label: 'Completed'      },
-  { value: 'on-hold',     label: 'On Hold'        },
-  { value: 'abandoned',   label: 'Abandoned'      },
+  { value: 'all',         label: 'All statuses' },
+  { value: 'idea',        label: 'Idea'         },
+  { value: 'in-progress', label: 'In Progress'  },
+  { value: 'mixing',      label: 'Mixing'       },
+  { value: 'mastering',   label: 'Mastering'    },
+  { value: 'done',        label: 'Done'         },
+  { value: 'shelved',     label: 'Shelved'      },
 ]
 
 const PRIORITY_OPTIONS = [

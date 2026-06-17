@@ -103,6 +103,19 @@ export async function updateBlockContent(
   await upsertBlock({ ...block, data: { ...block.data, content: newContent } } as Block)
 }
 
+export async function updateBlock(block: Block): Promise<void> {
+  await upsertBlock(block)
+}
+
+export async function createBlock(
+  buildId:  string,
+  stageKey: string,
+  order:    number,
+  payload:  Omit<Block, 'id' | 'buildId' | 'stageKey' | 'order' | 'locked'>,
+): Promise<void> {
+  await upsertBlock({ id: crypto.randomUUID(), buildId, stageKey, order, locked: false, ...payload } as Block)
+}
+
 export async function removeBlock(id: string): Promise<void> {
   await deleteBlock(id)
 }
