@@ -295,7 +295,7 @@ export function BuildWorkspacePage() {
   const navigate    = useNavigate()
   const build       = useBuild(id ?? '')
   const stages      = useBuildStages(id ?? '')
-  const [activeKey, setActiveKey] = useState<string>(STAGES[0].key)
+  const [activeKey, setActiveKey] = useState<string | null>(null)
 
   if (build === undefined || stages === undefined) {
     return (
@@ -314,7 +314,8 @@ export function BuildWorkspacePage() {
     )
   }
 
-  const activeStage    = stages.find(s => s.stageKey === activeKey)
+  const effectiveKey   = activeKey ?? build.currentStage ?? STAGES[0].key
+  const activeStage    = stages.find(s => s.stageKey === effectiveKey)
   const completedCount = stages.filter(s => s.completed).length
   const [editingMeta, setEditingMeta] = useState(false)
 
@@ -395,10 +396,10 @@ export function BuildWorkspacePage() {
               key={s.key}
               type="button"
               role="tab"
-              aria-selected={activeKey === s.key}
+              aria-selected={effectiveKey === s.key}
               className={[
                 'ws-tab',
-                activeKey === s.key ? 'ws-tab--active' : '',
+                effectiveKey === s.key ? 'ws-tab--active' : '',
                 dbStage?.completed   ? 'ws-tab--done'   : '',
               ].filter(Boolean).join(' ')}
               onClick={() => setActiveKey(s.key)}
@@ -419,14 +420,14 @@ export function BuildWorkspacePage() {
               <div>
                 <div className="ws-stage-title">{activeStage.title}</div>
                 <div className="ws-stage-desc">
-                  {STAGES.find(s => s.key === activeKey)?.description}
+                  {STAGES.find(s => s.key === effectiveKey)?.description}
                 </div>
               </div>
             </div>
 
             <StagePanel
               buildId={build.id}
-              stageKey={activeKey}
+              stageKey={effectiveKey}
               stageId={activeStage.id}
               completed={activeStage.completed}
             />
