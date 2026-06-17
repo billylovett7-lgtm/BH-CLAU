@@ -19,15 +19,15 @@ interface Props {
 export function BlockRenderer({ block, onUpdate }: Props) {
   switch (block.type) {
     case 'text':       return <TextBlock      block={block} onUpdate={onUpdate} />
-    case 'cards':      return <CardsBlock     block={block} />
-    case 'table':      return <TableBlock     block={block} />
+    case 'cards':      return <CardsBlock     block={block} onUpdate={onUpdate} />
+    case 'table':      return <TableBlock     block={block} onUpdate={onUpdate} />
     case 'checklist':  return <ChecklistBlock block={block} onUpdate={onUpdate} />
-    case 'timeline':   return <TimelineBlock  block={block} />
+    case 'timeline':   return <TimelineBlock  block={block} onUpdate={onUpdate} />
     case 'rack':       return <RackBlock      block={block} />
     case 'midiGrid':   return <MidiGridBlock  block={block} />
     case 'sampleCard': return <SampleCardBlock block={block} />
     case 'presetCard': return <PresetCardBlock block={block} />
-    case 'meter':      return <MeterBlock     block={block} />
+    case 'meter':      return <MeterBlock     block={block} onUpdate={onUpdate} />
     case 'source':     return <SourceBlock    block={block} />
     default: {
       const _exhaustive: never = block

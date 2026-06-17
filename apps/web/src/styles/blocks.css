@@ -84,6 +84,25 @@
   word-break: break-word;
 }
 
+.block-card--editable { cursor: pointer; }
+.block-card--editable:hover { border-color: var(--color-accent-cyan); }
+.block-card--editable:focus { outline: 2px solid var(--color-accent-cyan); outline-offset: 2px; }
+
+.block-card__input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-accent-cyan);
+  color: var(--color-text);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+  font-family: inherit;
+  padding: 0;
+  outline: none;
+}
+
+.block-card__placeholder { color: var(--color-text-faint); font-style: normal; }
+
 /* ─── Table block ─────────────────────────────────────────────────────────── */
 
 .block-table { overflow-x: auto; }
@@ -115,6 +134,23 @@
 
 .block-table tr:last-child td { border-bottom: none; }
 .block-table tr:hover td { background: var(--color-surface-hover); }
+
+.block-table__editable-cell { cursor: pointer; }
+.block-table__editable-cell:hover { background: rgba(0,229,255,0.04) !important; }
+
+.block-table__cell-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-accent-cyan);
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+  font-family: inherit;
+  padding: 0;
+  outline: none;
+}
+
+.block-table__placeholder { color: var(--color-text-faint); }
 
 /* ─── Checklist block ─────────────────────────────────────────────────────── */
 
@@ -215,6 +251,75 @@
   color: var(--color-text-muted);
   margin-top: 2px;
 }
+
+.block-timeline__section--editable { cursor: default; }
+.block-timeline__section--editable:hover { background: var(--color-surface-hover); }
+
+.block-timeline__hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+  margin-top: 2px;
+  font-style: italic;
+}
+
+.block-timeline__edit-btn {
+  font-size: var(--text-xs);
+  padding: 2px 6px;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-faint);
+  cursor: pointer;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+.block-timeline__section--editable:hover .block-timeline__edit-btn { opacity: 1; }
+
+.block-timeline__edit { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-1); }
+
+.block-timeline__notes-input {
+  width: 100%;
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-accent-cyan);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  padding: var(--space-2);
+  resize: vertical;
+  outline: none;
+}
+
+.block-timeline__edit-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.block-timeline__energy-select {
+  padding: 2px var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  outline: none;
+}
+
+.block-timeline__save-btn,
+.block-timeline__cancel-btn {
+  padding: 2px var(--space-3);
+  font-size: var(--text-xs);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+  background: none;
+}
+
+.block-timeline__save-btn { background: var(--color-accent-cyan); color: var(--color-bg); border-color: var(--color-accent-cyan); font-weight: var(--font-weight-medium); }
+.block-timeline__cancel-btn { color: var(--color-text-faint); }
+.block-timeline__cancel-btn:hover { color: var(--color-text); }
 
 .block-timeline__energy {
   font-size: var(--text-xs);
@@ -484,6 +589,22 @@
   color: var(--color-text);
   min-width: 48px;
   text-align: right;
+}
+
+.block-meter__value--editable { cursor: pointer; border-bottom: 1px dashed var(--color-border); }
+.block-meter__value--editable:hover { color: var(--color-accent-cyan); border-bottom-color: var(--color-accent-cyan); }
+
+.block-meter__input {
+  width: 72px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-accent-cyan);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-family: var(--font-mono);
+  text-align: right;
+  outline: none;
+  padding: 0;
 }
 
 /* ─── Source block ────────────────────────────────────────────────────────── */
