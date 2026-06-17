@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { useChainRacks } from '@/hooks/useLibrary'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { Badge, Spinner, EmptyState } from '@/components/ui'
+import { softDeleteChainRack } from '@/services/localDb'
 import type { ChainRack } from '@codex/shared'
 
 // ─── Detail drawer ────────────────────────────────────────────────────────────
 
-function ChainDetail({ rack, onClose }: { rack: ChainRack; onClose: () => void }) {
+function ChainDetail({ rack, onClose, onDelete }: { rack: ChainRack; onClose: () => void; onDelete: () => void }) {
   return (
     <div className="lib-drawer">
       <div className="lib-drawer__header">
@@ -58,6 +59,9 @@ function ChainDetail({ rack, onClose }: { rack: ChainRack; onClose: () => void }
             {rack.tags.map(t => <Badge key={t} variant="default">{t}</Badge>)}
           </div>
         )}
+      </div>
+      <div className="lib-drawer__footer">
+        <button type="button" className="lib-drawer__delete" onClick={onDelete}>Delete rack</button>
       </div>
     </div>
   )
@@ -117,7 +121,7 @@ export function ChainsPage() {
         }
       </div>
 
-      {selected && <ChainDetail rack={selected} onClose={() => setSelected(null)} />}
+      {selected && <ChainDetail rack={selected} onClose={() => setSelected(null)} onDelete={async () => { await softDeleteChainRack(selected.id); setSelected(null) }} />}
 
       <LibStyles />
     </div>
@@ -153,6 +157,9 @@ function LibStyles() {
       .lib-drawer__title { font-size:var(--text-lg); font-weight:var(--font-weight-bold); color:var(--color-text); }
       .lib-drawer__sub { font-size:var(--text-sm); color:var(--color-text-faint); }
       .lib-drawer__close { background:none; border:none; color:var(--color-text-faint); cursor:pointer; font-size:20px; line-height:1; padding:0; flex-shrink:0; }
+      .lib-drawer__footer { padding:var(--space-3) var(--space-5); border-top:1px solid var(--color-border); margin-top:auto; }
+      .lib-drawer__delete { width:100%; padding:var(--space-2); border:1px solid var(--color-border); border-radius:var(--radius-sm); background:transparent; color:var(--color-text-faint); cursor:pointer; font-size:var(--text-sm); transition:all var(--transition-fast); }
+      .lib-drawer__delete:hover { border-color:var(--color-danger); background:var(--color-danger-muted,rgba(255,59,48,0.1)); color:var(--color-danger,#ff3b30); }
       .lib-drawer__body { padding:var(--space-4) var(--space-5); display:flex; flex-direction:column; gap:var(--space-5); }
       .lib-section { display:flex; flex-direction:column; gap:var(--space-2); }
       .lib-section__title { font-size:var(--text-sm); font-weight:var(--font-weight-semibold); color:var(--color-text-faint); text-transform:uppercase; letter-spacing:0.08em; margin:0; }

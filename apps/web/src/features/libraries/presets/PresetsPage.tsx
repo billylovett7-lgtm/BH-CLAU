@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { usePresets } from '@/hooks/useLibrary'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { Badge, Spinner, EmptyState, Select } from '@/components/ui'
+import { softDeletePreset } from '@/services/localDb'
 import type { Preset } from '@codex/shared'
 
 const TYPE_OPTS = [
@@ -16,7 +17,7 @@ const TYPE_OPTS = [
   { value: 'other', label: 'Other' },
 ]
 
-function PresetDetail({ p, onClose }: { p: Preset; onClose: () => void }) {
+function PresetDetail({ p, onClose, onDelete }: { p: Preset; onClose: () => void; onDelete: () => void }) {
   return (
     <div className="lib-drawer">
       <div className="lib-drawer__header">
@@ -67,6 +68,9 @@ function PresetDetail({ p, onClose }: { p: Preset; onClose: () => void }) {
             {p.tags.map(t => <Badge key={t} variant="default">{t}</Badge>)}
           </div>
         )}
+      </div>
+      <div className="lib-drawer__footer">
+        <button type="button" className="lib-drawer__delete" onClick={onDelete}>Delete preset</button>
       </div>
     </div>
   )
@@ -128,7 +132,7 @@ export function PresetsPage() {
         }
       </div>
 
-      {selected && <PresetDetail p={selected} onClose={() => setSelected(null)} />}
+      {selected && <PresetDetail p={selected} onClose={() => setSelected(null)} onDelete={async () => { await softDeletePreset(selected.id); setSelected(null) }} />}
       <LibStyles />
     </div>
   )

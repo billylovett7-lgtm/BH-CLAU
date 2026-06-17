@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { useGrooves } from '@/hooks/useLibrary'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { Badge, Spinner, EmptyState } from '@/components/ui'
+import { softDeleteGroove } from '@/services/localDb'
 import type { Groove } from '@codex/shared'
 
-function GrooveDetail({ g, onClose }: { g: Groove; onClose: () => void }) {
+function GrooveDetail({ g, onClose, onDelete }: { g: Groove; onClose: () => void; onDelete: () => void }) {
   const maxVel = Math.max(...g.velocity.map(v => v.velocity), 1)
 
   return (
@@ -83,6 +84,9 @@ function GrooveDetail({ g, onClose }: { g: Groove; onClose: () => void }) {
           </section>
         )}
       </div>
+      <div className="lib-drawer__footer">
+        <button type="button" className="lib-drawer__delete" onClick={onDelete}>Delete groove</button>
+      </div>
     </div>
   )
 }
@@ -133,7 +137,7 @@ export function GroovesPage() {
         }
       </div>
 
-      {selected && <GrooveDetail g={selected} onClose={() => setSelected(null)} />}
+      {selected && <GrooveDetail g={selected} onClose={() => setSelected(null)} onDelete={async () => { await softDeleteGroove(selected.id); setSelected(null) }} />}
 
       <style>{`
         .lib-page { display:flex; height:100%; min-height:0; }

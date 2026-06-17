@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMidiPatterns } from '@/hooks/useLibrary'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { Badge, Spinner, EmptyState, Select } from '@/components/ui'
+import { softDeleteMidiPattern } from '@/services/localDb'
 import type { MidiPattern } from '@codex/shared'
 
 const TYPE_OPTS = [
@@ -18,7 +19,7 @@ const TYPE_VARIANT: Record<string, 'lime' | 'cyan' | 'blue' | 'purple' | 'defaul
   drum: 'lime', bass: 'cyan', chord: 'blue', melody: 'purple', perc: 'default',
 }
 
-function PatternDetail({ p, onClose }: { p: MidiPattern; onClose: () => void }) {
+function PatternDetail({ p, onClose, onDelete }: { p: MidiPattern; onClose: () => void; onDelete: () => void }) {
   return (
     <div className="lib-drawer">
       <div className="lib-drawer__header">
@@ -69,6 +70,9 @@ function PatternDetail({ p, onClose }: { p: MidiPattern; onClose: () => void }) 
             {p.tags.map(t => <Badge key={t} variant="default">{t}</Badge>)}
           </div>
         )}
+      </div>
+      <div className="lib-drawer__footer">
+        <button type="button" className="lib-drawer__delete" onClick={onDelete}>Delete pattern</button>
       </div>
     </div>
   )
@@ -132,7 +136,7 @@ export function MidiPage() {
         }
       </div>
 
-      {selected && <PatternDetail p={selected} onClose={() => setSelected(null)} />}
+      {selected && <PatternDetail p={selected} onClose={() => setSelected(null)} onDelete={async () => { await softDeleteMidiPattern(selected.id); setSelected(null) }} />}
       <LibSharedStyles />
     </div>
   )

@@ -1,4 +1,4 @@
-import { upsertBuild, upsertBuildStages, upsertBlocks, upsertBlock, deleteBlock, db } from './localDb'
+import { upsertBuild, upsertBuildStages, upsertBlocks, upsertBlock, deleteBlock, deleteBlocksByBuild, deleteBuildStagesByBuild, softDeleteBuild, db } from './localDb'
 import type { Build, BuildStage, Block, TextBlock } from '@codex/shared'
 import { STAGES } from '@codex/shared'
 import { buildSeedBlocks } from './stageSeeds'
@@ -114,6 +114,12 @@ export async function createBlock(
   payload:  Omit<Block, 'id' | 'buildId' | 'stageKey' | 'order' | 'locked'>,
 ): Promise<void> {
   await upsertBlock({ id: crypto.randomUUID(), buildId, stageKey, order, locked: false, ...payload } as Block)
+}
+
+export async function deleteBuild(id: string): Promise<void> {
+  await softDeleteBuild(id)
+  await deleteBlocksByBuild(id)
+  await deleteBuildStagesByBuild(id)
 }
 
 export async function removeBlock(id: string): Promise<void> {

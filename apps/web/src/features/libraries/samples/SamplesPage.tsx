@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useSamples } from '@/hooks/useLibrary'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { Badge, Spinner, EmptyState, Select } from '@/components/ui'
+import { softDeleteSample } from '@/services/localDb'
 import type { Sample } from '@codex/shared'
 
 const TYPE_OPTS = [
@@ -21,7 +22,7 @@ function fmt(sec: number | null | undefined): string {
   return sec >= 60 ? `${Math.floor(sec / 60)}m${(sec % 60).toFixed(0)}s` : `${sec.toFixed(1)}s`
 }
 
-function SampleDetail({ s, onClose }: { s: Sample; onClose: () => void }) {
+function SampleDetail({ s, onClose, onDelete }: { s: Sample; onClose: () => void; onDelete: () => void }) {
   return (
     <div className="lib-drawer">
       <div className="lib-drawer__header">
@@ -59,6 +60,9 @@ function SampleDetail({ s, onClose }: { s: Sample; onClose: () => void }) {
             {s.tags.map(t => <Badge key={t} variant="default">{t}</Badge>)}
           </div>
         )}
+      </div>
+      <div className="lib-drawer__footer">
+        <button type="button" className="lib-drawer__delete" onClick={onDelete}>Delete sample</button>
       </div>
     </div>
   )
@@ -122,7 +126,7 @@ export function SamplesPage() {
         }
       </div>
 
-      {selected && <SampleDetail s={selected} onClose={() => setSelected(null)} />}
+      {selected && <SampleDetail s={selected} onClose={() => setSelected(null)} onDelete={async () => { await softDeleteSample(selected.id); setSelected(null) }} />}
       <LibStyles />
     </div>
   )

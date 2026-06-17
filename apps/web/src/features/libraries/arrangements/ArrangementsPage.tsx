@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useArrangements } from '@/hooks/useLibrary'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { Badge, Spinner, EmptyState } from '@/components/ui'
+import { softDeleteArrangement } from '@/services/localDb'
 import type { Arrangement } from '@codex/shared'
 
 const ENERGY_VARIANT: Record<string, 'lime' | 'cyan' | 'blue' | 'warning' | 'default'> = {
@@ -19,7 +20,7 @@ function SectionBar({ section, totalBars }: { section: Arrangement['sections'][n
   )
 }
 
-function ArrangementDetail({ a, onClose }: { a: Arrangement; onClose: () => void }) {
+function ArrangementDetail({ a, onClose, onDelete }: { a: Arrangement; onClose: () => void; onDelete: () => void }) {
   return (
     <div className="lib-drawer">
       <div className="lib-drawer__header">
@@ -71,6 +72,9 @@ function ArrangementDetail({ a, onClose }: { a: Arrangement; onClose: () => void
             <p className="lib-notes">{val}</p>
           </section>
         ))}
+      </div>
+      <div className="lib-drawer__footer">
+        <button type="button" className="lib-drawer__delete" onClick={onDelete}>Delete arrangement</button>
       </div>
     </div>
   )
@@ -124,7 +128,7 @@ export function ArrangementsPage() {
         }
       </div>
 
-      {selected && <ArrangementDetail a={selected} onClose={() => setSelected(null)} />}
+      {selected && <ArrangementDetail a={selected} onClose={() => setSelected(null)} onDelete={async () => { await softDeleteArrangement(selected.id); setSelected(null) }} />}
 
       <style>{`
         .lib-page { display:flex; height:100%; min-height:0; }

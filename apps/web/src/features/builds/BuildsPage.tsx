@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useBuilds } from '@/hooks/useBuilds'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { Button, StatusBadge, PriorityBadge, Badge, Spinner, EmptyState, Select } from '@/components/ui'
+import { deleteBuild } from '@/services/buildService'
 import type { Build } from '@codex/shared'
 import { GENRES } from '@codex/shared'
 
@@ -78,13 +79,28 @@ function BuildCard({ build }: { build: Build }) {
   const circ = 2 * Math.PI * 10
   const dash = (pct / 100) * circ
 
+  async function handleDelete(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!window.confirm(`Delete "${build.title}"? This cannot be undone.`)) return
+    await deleteBuild(build.id)
+  }
+
   return (
     <div className="bcard" role="button" tabIndex={0}
       onClick={() => navigate(`/builds/${build.id}`)}
       onKeyDown={e => e.key === 'Enter' && navigate(`/builds/${build.id}`)}>
       <div className="bcard__header">
         <div className="bcard__title">{build.title}</div>
-        <StatusBadge status={build.status} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+          <StatusBadge status={build.status} />
+          <button
+            type="button"
+            className="bcard__delete"
+            onClick={handleDelete}
+            aria-label="Delete build"
+            title="Delete build"
+          >×</button>
+        </div>
       </div>
 
       {(build.genre || build.bpm || build.key) && (
@@ -247,6 +263,9 @@ export function BuildsPage() {
         .bcard__progress { display:flex; align-items:center; gap:4px; }
         .bcard__pct { font-size:var(--text-xs); color:var(--color-text-faint); font-family:var(--font-mono); }
         .bcard__tags { display:flex; flex-wrap:wrap; gap:var(--space-1); }
+        .bcard__delete { width:20px; height:20px; border:none; border-radius:var(--radius-sm); background:transparent; color:var(--color-text-faint); cursor:pointer; font-size:16px; line-height:1; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity var(--transition-fast),background var(--transition-fast),color var(--transition-fast); flex-shrink:0; }
+        .bcard:hover .bcard__delete { opacity:1; }
+        .bcard__delete:hover { background:var(--color-danger-muted); color:var(--color-danger); }
         .builds-list { border:1px solid var(--color-border); border-radius:var(--radius-lg); overflow:hidden; }
         .blist-row { display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) var(--space-4); border-bottom:1px solid var(--color-border-subtle); cursor:pointer; transition:background var(--transition-fast); }
         .blist-row:last-child { border-bottom:none; }

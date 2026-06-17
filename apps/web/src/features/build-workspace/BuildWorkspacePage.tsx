@@ -1,11 +1,96 @@
 import { useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useBuild, useBuildStages, useStageBlocks } from '@/hooks/useBuild'
-import { toggleStageComplete, updateBuildField, recalculateProgress, removeBlock, updateBlock, createBlock } from '@/services/buildService'
+import { toggleStageComplete, updateBuildField, recalculateProgress, removeBlock, updateBlock, createBlock, deleteBuild } from '@/services/buildService'
 import { BlockRenderer } from '@/components/blocks'
 import { Button, Spinner, StatusBadge, PriorityBadge, Badge, useToast } from '@/components/ui'
-import { STAGES } from '@codex/shared'
-import type { Block, BuildStatus } from '@codex/shared'
+import { STAGES, GENRES } from '@codex/shared'
+import type { Block, Build, BuildStatus } from '@codex/shared'
+
+// ─── Key options (for meta editor) ───────────────────────────────────────────
+
+const KEY_OPTIONS = [
+  { value: '',   label: 'Unknown' },
+  ...['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'].flatMap(n => [
+    { value: `${n} major`, label: `${n} major` },
+    { value: `${n} minor`, label: `${n} minor` },
+  ]),
+]
+
+const GENRE_OPTIONS = [
+  { value: '', label: 'Unknown' },
+  ...GENRES.map(g => ({ value: g.value, label: g.label })),
+]
+
+// ─── Meta editor ─────────────────────────────────────────────────────────────
+
+function MetaEditor({ build, onClose }: {
+  build: NonNullable<ReturnType<typeof useBuild>>
+  onClose: () => void
+}) {
+  const { toast } = useToast()
+  const [title,    setTitle]    = useState(build.title)
+  const [bpm,      setBpm]      = useState(build.bpm != null ? String(build.bpm) : '')
+  const [key,      setKey]      = useState(build.key ?? '')
+  const [genre,    setGenre]    = useState(build.genre ?? '')
+  const [priority, setPriority] = useState(build.priority)
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault()
+    if (!title.trim()) return
+    try {
+      await updateBuildField(build.id, {
+        title:    title.trim(),
+        bpm:      bpm ? parseFloat(bpm) : null,
+        key:      key  || null,
+        genre:    genre || '',
+        priority: priority as Build['priority'],
+      })
+      onClose()
+    } catch (err) {
+      toast({ title: 'Save failed', description: String(err), variant: 'error' })
+    }
+  }
+
+  return (
+    <form onSubmit={save} className="ws-meta-editor">
+      <input
+        className="ws-meta-input ws-meta-input--title"
+        value={title}
+        onChange={e => setTitle(e.target.value)}
+        placeholder="Track title"
+        required
+        autoFocus
+      />
+      <div className="ws-meta-row">
+        <input
+          className="ws-meta-input"
+          type="number"
+          min={60} max={250}
+          value={bpm}
+          onChange={e => setBpm(e.target.value)}
+          placeholder="BPM"
+          style={{ width: 80 }}
+        />
+        <select className="ws-meta-select" value={key} onChange={e => setKey(e.target.value)}>
+          {KEY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        <select className="ws-meta-select" value={genre} onChange={e => setGenre(e.target.value)}>
+          {GENRE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        <select className="ws-meta-select" value={priority} onChange={e => setPriority(e.target.value as Build['priority'])}>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+      <div className="ws-meta-actions">
+        <Button type="submit" variant="primary" size="sm">Save</Button>
+        <Button type="button" variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+      </div>
+    </form>
+  )
+}
 
 // ─── Block type picker ────────────────────────────────────────────────────────
 
@@ -211,8 +296,9 @@ export function BuildWorkspacePage() {
     )
   }
 
-  const activeStage = stages.find(s => s.stageKey === activeKey)
+  const activeStage    = stages.find(s => s.stageKey === activeKey)
   const completedCount = stages.filter(s => s.completed).length
+  const [editingMeta, setEditingMeta] = useState(false)
 
   async function handleStatusCycle() {
     const cycle: BuildStatus[] = ['idea', 'in-progress', 'mixing', 'mastering', 'done', 'shelved']
@@ -221,38 +307,58 @@ export function BuildWorkspacePage() {
     await updateBuildField(build!.id, { status: next })
   }
 
+  async function handleDelete() {
+    if (!window.confirm(`Delete "${build!.title}"? This cannot be undone.`)) return
+    await deleteBuild(build!.id)
+    navigate('/builds', { replace: true })
+  }
+
   return (
     <div className="ws-page">
 
       {/* ── Header ── */}
       <div className="ws-header">
-        <button className="ws-back" onClick={() => navigate('/builds')} type="button">
-          ← Builds
-        </button>
-
-        <div className="ws-title-row">
-          <div className="ws-title-group">
-            <h1 className="ws-title">{build.title}</h1>
-            <div className="ws-meta">
-              {[
-                build.genre?.replace(/-/g, ' '),
-                build.bpm ? `${build.bpm} BPM` : '',
-                build.key ?? '',
-              ].filter(Boolean).join(' · ')}
-            </div>
-          </div>
-
-          <div className="ws-header-actions">
-            <ProgressRing pct={build.progress} />
-            <div className="ws-header-badges">
-              <button type="button" className="ws-status-btn" onClick={handleStatusCycle}>
-                <StatusBadge status={build.status} />
-              </button>
-              <PriorityBadge priority={build.priority} />
-              <Badge variant="default">{completedCount}/{stages.length} stages</Badge>
-            </div>
+        <div className="ws-header-top">
+          <button className="ws-back" onClick={() => navigate('/builds')} type="button">
+            ← Builds
+          </button>
+          <div className="ws-header-top-actions">
+            <button type="button" className="ws-icon-btn" onClick={() => setEditingMeta(e => !e)} title="Edit details">
+              <EditIcon />
+            </button>
+            <button type="button" className="ws-icon-btn ws-icon-btn--danger" onClick={handleDelete} title="Delete build">
+              <TrashIcon />
+            </button>
           </div>
         </div>
+
+        {editingMeta
+          ? <MetaEditor build={build} onClose={() => setEditingMeta(false)} />
+          : (
+            <div className="ws-title-row">
+              <div className="ws-title-group">
+                <h1 className="ws-title">{build.title}</h1>
+                <div className="ws-meta">
+                  {[
+                    build.genre?.replace(/-/g, ' '),
+                    build.bpm ? `${build.bpm} BPM` : '',
+                    build.key ?? '',
+                  ].filter(Boolean).join(' · ')}
+                </div>
+              </div>
+              <div className="ws-header-actions">
+                <ProgressRing pct={build.progress} />
+                <div className="ws-header-badges">
+                  <button type="button" className="ws-status-btn" onClick={handleStatusCycle}>
+                    <StatusBadge status={build.status} />
+                  </button>
+                  <PriorityBadge priority={build.priority} />
+                  <Badge variant="default">{completedCount}/{stages.length} stages</Badge>
+                </div>
+              </div>
+            </div>
+          )
+        }
       </div>
 
       {/* ── Stage tabs ── */}
@@ -306,8 +412,21 @@ export function BuildWorkspacePage() {
       <style>{`
         .ws-page { display:flex; flex-direction:column; height:100%; min-height:0; }
         .ws-header { padding:var(--space-4) var(--space-5); border-bottom:1px solid var(--color-border); background:var(--color-surface); }
-        .ws-back { background:none; border:none; color:var(--color-text-muted); cursor:pointer; font-size:var(--text-sm); padding:0; margin-bottom:var(--space-2); display:block; }
+        .ws-header-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-2); }
+        .ws-header-top-actions { display:flex; gap:var(--space-1); }
+        .ws-back { background:none; border:none; color:var(--color-text-muted); cursor:pointer; font-size:var(--text-sm); padding:0; }
         .ws-back:hover { color:var(--color-text); }
+        .ws-icon-btn { display:flex; align-items:center; justify-content:center; width:28px; height:28px; border:1px solid transparent; border-radius:var(--radius-sm); background:none; color:var(--color-text-faint); cursor:pointer; transition:all var(--transition-fast); }
+        .ws-icon-btn:hover { background:var(--color-surface-hover); border-color:var(--color-border); color:var(--color-text); }
+        .ws-icon-btn--danger:hover { background:var(--color-danger-muted); border-color:var(--color-danger); color:var(--color-danger); }
+        .ws-meta-editor { display:flex; flex-direction:column; gap:var(--space-2); padding:var(--space-3); background:var(--color-bg-2); border:1px solid var(--color-border); border-radius:var(--radius-md); }
+        .ws-meta-input { padding:var(--space-2) var(--space-3); background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); color:var(--color-text); font-size:var(--text-sm); font-family:inherit; outline:none; }
+        .ws-meta-input:focus { border-color:var(--color-accent-cyan); }
+        .ws-meta-input--title { font-size:var(--text-base); font-weight:var(--font-weight-semibold); }
+        .ws-meta-select { padding:var(--space-2) var(--space-3); background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); color:var(--color-text); font-size:var(--text-sm); outline:none; }
+        .ws-meta-select:focus { border-color:var(--color-accent-cyan); }
+        .ws-meta-row { display:flex; gap:var(--space-2); flex-wrap:wrap; }
+        .ws-meta-actions { display:flex; gap:var(--space-2); }
         .ws-title-row { display:flex; align-items:center; justify-content:space-between; gap:var(--space-4); flex-wrap:wrap; }
         .ws-title-group { min-width:0; }
         .ws-title { font-size:var(--text-xl); font-weight:var(--font-weight-bold); color:var(--color-text); margin:0 0 var(--space-1); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:500px; }
@@ -358,5 +477,21 @@ export function BuildWorkspacePage() {
         .block-text__hint { font-size:var(--text-xs); color:var(--color-text-faint); margin-top:var(--space-1); }
       `}</style>
     </div>
+  )
+}
+
+function EditIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden>
+      <path d="M9.5 1.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function TrashIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden>
+      <path d="M2 3.5h9M5 3.5V2.5h3v1M3.5 3.5l.5 7h5l.5-7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
   )
 }

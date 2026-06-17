@@ -600,3 +600,29 @@
   max-width: 360px;
   line-height: var(--leading-relaxed);
 }
+
+/* ─── Library drawer shared ───────────────────────────────────────────────── */
+
+.lib-drawer__footer {
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--color-border);
+  margin-top: auto;
+}
+
+.lib-drawer__delete {
+  width: 100%;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-faint);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  transition: all var(--transition-fast);
+}
+
+.lib-drawer__delete:hover {
+  border-color: #ff3b30;
+  background: rgba(255, 59, 48, 0.1);
+  color: #ff3b30;
+}
