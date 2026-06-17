@@ -341,6 +341,9 @@ export function BuildWorkspacePage() {
             ← Builds
           </button>
           <div className="ws-header-top-actions">
+            <button type="button" className="ws-icon-btn" onClick={() => navigate(`/builds/${build.id}/print`)} title="Print / export">
+              <PrintIcon />
+            </button>
             <button type="button" className="ws-icon-btn" onClick={() => setEditingMeta(e => !e)} title="Edit details">
               <EditIcon />
             </button>
@@ -501,6 +504,17 @@ export function BuildWorkspacePage() {
         .block-text__hint { font-size:var(--text-xs); color:var(--color-text-faint); margin-top:var(--space-1); }
       `}</style>
     </div>
+  )
+}
+
+function PrintIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden>
+      <rect x="2.5" y="4.5" width="8" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+      <path d="M4.5 4.5V2.5h4v2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+      <path d="M4.5 9.5v1h4v-1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+      <rect x="4.5" y="7" width="4" height="1.5" fill="currentColor" opacity=".4"/>
+    </svg>
   )
 }
 
