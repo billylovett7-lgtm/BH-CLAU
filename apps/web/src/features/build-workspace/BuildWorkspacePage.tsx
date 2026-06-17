@@ -35,6 +35,7 @@ function MetaEditor({ build, onClose }: {
   const [genre,    setGenre]    = useState(build.genre ?? '')
   const [priority, setPriority] = useState(build.priority)
   const [dueDate,  setDueDate]  = useState(build.dueDate ? build.dueDate.slice(0, 10) : '')
+  const [notes,    setNotes]    = useState(build.notes ?? '')
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
@@ -47,6 +48,7 @@ function MetaEditor({ build, onClose }: {
         genre:    genre || '',
         priority: priority as Build['priority'],
         dueDate:  dueDate ? new Date(dueDate).toISOString() : null,
+        notes:    notes,
       })
       onClose()
     } catch (err) {
@@ -93,6 +95,13 @@ function MetaEditor({ build, onClose }: {
           title="Due date"
         />
       </div>
+      <textarea
+        className="ws-meta-input ws-meta-textarea"
+        value={notes}
+        onChange={e => setNotes(e.target.value)}
+        placeholder="Build notes…"
+        rows={3}
+      />
       <div className="ws-meta-actions">
         <Button type="submit" variant="primary" size="sm">Save</Button>
         <Button type="button" variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
@@ -352,8 +361,12 @@ export function BuildWorkspacePage() {
                     build.genre?.replace(/-/g, ' '),
                     build.bpm ? `${build.bpm} BPM` : '',
                     build.key ?? '',
+                    build.dueDate ? `Due ${new Date(build.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : '',
                   ].filter(Boolean).join(' · ')}
                 </div>
+                {build.notes && (
+                  <div className="ws-notes">{build.notes}</div>
+                )}
               </div>
               <div className="ws-header-actions">
                 <ProgressRing pct={build.progress} />
@@ -432,6 +445,7 @@ export function BuildWorkspacePage() {
         .ws-meta-input { padding:var(--space-2) var(--space-3); background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); color:var(--color-text); font-size:var(--text-sm); font-family:inherit; outline:none; }
         .ws-meta-input:focus { border-color:var(--color-accent-cyan); }
         .ws-meta-input--title { font-size:var(--text-base); font-weight:var(--font-weight-semibold); }
+        .ws-meta-textarea { resize:vertical; min-height:60px; }
         .ws-meta-select { padding:var(--space-2) var(--space-3); background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); color:var(--color-text); font-size:var(--text-sm); outline:none; }
         .ws-meta-select:focus { border-color:var(--color-accent-cyan); }
         .ws-meta-row { display:flex; gap:var(--space-2); flex-wrap:wrap; }
@@ -440,6 +454,7 @@ export function BuildWorkspacePage() {
         .ws-title-group { min-width:0; }
         .ws-title { font-size:var(--text-xl); font-weight:var(--font-weight-bold); color:var(--color-text); margin:0 0 var(--space-1); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:500px; }
         .ws-meta { font-size:var(--text-sm); color:var(--color-text-faint); text-transform:capitalize; }
+        .ws-notes { font-size:var(--text-sm); color:var(--color-text-faint); margin-top:var(--space-1); font-style:italic; white-space:pre-wrap; }
         .ws-header-actions { display:flex; align-items:center; gap:var(--space-3); flex-shrink:0; }
         .ws-header-badges { display:flex; flex-direction:column; align-items:flex-end; gap:var(--space-1); }
         .ws-status-btn { background:none; border:none; padding:0; cursor:pointer; }

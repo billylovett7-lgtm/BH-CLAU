@@ -139,11 +139,27 @@ export async function toggleStageComplete(
   })
 }
 
-// ─── Recalculate progress ─────────────────────────────────────────────────────
+// ─── Recalculate progress + advance currentStage ─────────────────────────────
 
 export async function recalculateProgress(buildId: string): Promise<void> {
   const stages = await db.buildStages.where('buildId').equals(buildId).toArray()
   if (!stages.length) return
   const pct = Math.round((stages.filter(s => s.completed).length / stages.length) * 100)
-  await db.builds.update(buildId, { progress: pct, updatedAt: new Date().toISOString() })
+
+  // Advance currentStage to the first incomplete stage (preserves manual position if all done)
+  const orderedKeys = STAGES.map(s => s.key)
+  const completedKeys = new Set(stages.filter(s => s.completed).map(s => s.stageKey))
+  const nextKey = orderedKeys.find(k => !completedKeys.has(k))
+
+  await db.builds.update(buildId, {
+    progress:     pct,
+    currentStage: nextKey ?? orderedKeys[orderedKeys.length - 1],
+    updatedAt:    new Date().toISOString(),
+  })
+}
+
+// ─── Favourite toggle ─────────────────────────────────────────────────────────
+
+export async function toggleFavourite(buildId: string, favourite: boolean): Promise<void> {
+  await db.builds.update(buildId, { favourite, updatedAt: new Date().toISOString() })
 }

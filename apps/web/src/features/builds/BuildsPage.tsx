@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useBuilds } from '@/hooks/useBuilds'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { Button, StatusBadge, PriorityBadge, Badge, Spinner, EmptyState, Select } from '@/components/ui'
-import { deleteBuild } from '@/services/buildService'
+import { deleteBuild, toggleFavourite } from '@/services/buildService'
 import type { Build } from '@codex/shared'
 import { GENRES } from '@codex/shared'
 
@@ -44,14 +44,16 @@ const SORT_OPTIONS = [
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 } as const
 
 function applyFilters(
-  builds:   Build[],
-  search:   string,
-  status:   StatusFilter,
-  priority: PriorityFilter,
-  genre:    string,
-  sort:     string,
+  builds:    Build[],
+  search:    string,
+  status:    StatusFilter,
+  priority:  PriorityFilter,
+  genre:     string,
+  sort:      string,
+  favsOnly:  boolean,
 ): Build[] {
   let list = [...builds]
+  if (favsOnly)              list = list.filter(b => b.favourite)
   if (search.trim())        list = list.filter(b => b.title.toLowerCase().includes(search.toLowerCase().trim()))
   if (status   !== 'all')   list = list.filter(b => b.status   === status)
   if (priority !== 'all')   list = list.filter(b => b.priority === priority)
@@ -85,6 +87,11 @@ function BuildCard({ build }: { build: Build }) {
     await deleteBuild(build.id)
   }
 
+  async function handleStar(e: React.MouseEvent) {
+    e.stopPropagation()
+    await toggleFavourite(build.id, !build.favourite)
+  }
+
   return (
     <div className="bcard" role="button" tabIndex={0}
       onClick={() => navigate(`/builds/${build.id}`)}
@@ -93,6 +100,13 @@ function BuildCard({ build }: { build: Build }) {
         <div className="bcard__title">{build.title}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
           <StatusBadge status={build.status} />
+          <button
+            type="button"
+            className={`bcard__star${build.favourite ? ' bcard__star--on' : ''}`}
+            onClick={handleStar}
+            aria-label={build.favourite ? 'Remove from favourites' : 'Add to favourites'}
+            title={build.favourite ? 'Unfavourite' : 'Favourite'}
+          >★</button>
           <button
             type="button"
             className="bcard__delete"
@@ -150,6 +164,7 @@ export function BuildsPage() {
   const [priority, setPriority] = useState<PriorityFilter>('all')
   const [genre,    setGenre]    = useState('all')
   const [sort,     setSort]     = useState('updatedAt')
+  const [favsOnly, setFavsOnly] = useState(false)
   const [view,     setView]     = useState<'grid' | 'list'>('grid')
 
   if (builds === undefined) {
@@ -160,7 +175,7 @@ export function BuildsPage() {
     )
   }
 
-  const filtered = applyFilters(builds, search, status, priority, genre, sort)
+  const filtered = applyFilters(builds, search, status, priority, genre, sort, favsOnly)
 
   return (
     <div className="builds-page">
@@ -184,6 +199,14 @@ export function BuildsPage() {
         <Select value={priority} onChange={v => setPriority(v as PriorityFilter)} options={PRIORITY_OPTIONS} />
         <Select value={genre}    onChange={setGenre}    options={GENRE_OPTIONS}    />
         <Select value={sort}     onChange={setSort}     options={SORT_OPTIONS}     />
+
+        <button
+          type="button"
+          className={`builds-fav-btn${favsOnly ? ' builds-fav-btn--on' : ''}`}
+          onClick={() => setFavsOnly(f => !f)}
+          title={favsOnly ? 'Show all builds' : 'Show favourites only'}
+          aria-pressed={favsOnly}
+        >★</button>
 
         <div className="builds-view-toggle">
           <button className={`builds-view-btn${view === 'grid' ? ' builds-view-btn--active' : ''}`}
@@ -266,6 +289,13 @@ export function BuildsPage() {
         .bcard__delete { width:20px; height:20px; border:none; border-radius:var(--radius-sm); background:transparent; color:var(--color-text-faint); cursor:pointer; font-size:16px; line-height:1; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity var(--transition-fast),background var(--transition-fast),color var(--transition-fast); flex-shrink:0; }
         .bcard:hover .bcard__delete { opacity:1; }
         .bcard__delete:hover { background:var(--color-danger-muted); color:var(--color-danger); }
+        .bcard__star { width:20px; height:20px; border:none; background:transparent; color:var(--color-text-faint); cursor:pointer; font-size:14px; line-height:1; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity var(--transition-fast),color var(--transition-fast); flex-shrink:0; padding:0; }
+        .bcard:hover .bcard__star { opacity:1; }
+        .bcard__star--on { opacity:1 !important; color:var(--color-accent-lime); }
+        .bcard__star:hover { color:var(--color-accent-lime); }
+        .builds-fav-btn { padding:0 var(--space-2); height:32px; border:1px solid var(--color-border); border-radius:var(--radius-md); background:none; color:var(--color-text-faint); cursor:pointer; font-size:14px; transition:all var(--transition-fast); }
+        .builds-fav-btn:hover { border-color:var(--color-accent-lime); color:var(--color-accent-lime); }
+        .builds-fav-btn--on { border-color:var(--color-accent-lime); background:rgba(200,241,53,0.08); color:var(--color-accent-lime); }
         .builds-list { border:1px solid var(--color-border); border-radius:var(--radius-lg); overflow:hidden; }
         .blist-row { display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) var(--space-4); border-bottom:1px solid var(--color-border-subtle); cursor:pointer; transition:background var(--transition-fast); }
         .blist-row:last-child { border-bottom:none; }
